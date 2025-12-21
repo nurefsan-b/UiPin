@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Ana Sayfa{% endblock %}
+
+{% block nav_content %}
+    <div class="nav-logo" style="visibility: hidden;"><i class="fab fa-pinterest"></i></div> 
+    <div class="nav-search">
+    <input type="text" id="global-search-input" placeholder="Ara: Makale, moda, tarif..." />
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="pin-grid">
+        {% for pin in pins %}
+        <div class="pin-card" id="pin-card-{{ pin.id }}" onclick="this.classList.toggle('flipped')">
+            <div class="pin-inner">
+                <div class="pin-front">
+                    <img src="{{ url_for('static', path=pin.image_path) }}" alt="{{ pin.title }}" class="pin-image" onload="window.dispatchEvent(new Event('resize'));">
+                    <div class="pin-overlay">
+    <div class="pin-overlay-header">
+        <button onclick="event.stopPropagation(); openSaveModal('{{ pin.id }}')" class="btn-save-overlay">
+            Kaydet
+        </button>
+        <button onclick="event.stopPropagation(); openReportModal('{{ pin.id }}')" 
+        class="btn-icon-overlay" title="Raporla">
+        <i class="fas fa-flag"></i>
+</button>
+    </div>
+
+    <div class="pin-overlay-footer">
+        <div class="pin-user-info">
+            <a href="/profile/{{ pin.owner.username }}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 8px;">
+            <img src="{{ url_for('static', path=pin.owner.profile_picture if pin.owner.profile_picture else 'images/default_avatar.jpg') }}" class="pin-user-avatar">
+            <span>{{ pin.owner.username }}</span>
+        </a>
+        </div>
+
+        <div class="pin-title-info">
+            {{ pin.title }}
+        </div>
+    </div>
+</div>
+    <div id="report-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 10000;">
+    <div style="background: white; padding: 25px; border-radius: 16px; width: 90%; max-width: 400px; position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        
+        <h2 style="margin-top: 0; color: #333; font-size: 20px; font-weight: 700; margin-bottom: 10px;">Pini Raporla</h2>
+        <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Bu gönderiyi neden bildirmek istiyorsunuz?</p>
+
+        <form id="report-form" onsubmit="submitReport(event)">
+            <input type="hidden" id="report-pin-id" name="pin_id">
+            
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
+                <label style="display:flex; align-items:center; cursor:pointer; font-size: 14px; color: #333;">
+                    <input type="radio" name="reason" value="spam" required style="margin-right: 10px; accent-color: #e60023;"> 
+                    Spam veya yanıltıcı
+                </label>
+                <label style="display:flex; align-items:center; cursor:pointer; font-size: 14px; color: #333;">
+                    <input type="radio" name="reason" value="harmful" style="margin-right: 10px; accent-color: #e60023;"> 
+                    Zararlı veya tehlikeli içerik
+                </label>
+                <label style="display:flex; align-items:center; cursor:pointer; font-size: 14px; color: #333;">
+                    <input type="radio" name="reason" value="copyright" style="margin-right: 10px; accent-color: #e60023;"> 
+                    Telif hakkı ihlali
+                </label>
+                <label style="display:flex; align-items:center; cursor:pointer; font-size: 14px; color: #333;">
+                    <input type="radio" name="reason" value="other" style="margin-right: 10px; accent-color: #e60023;"> 
+                    Diğer
+                </label>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeReportModal()" style="padding: 10px 20px; background: #efefef; color: #333; border: none; border-radius: 24px; cursor: pointer; font-weight: 600; font-size: 14px;">İptal</button>
+                <button type="submit" style="padding: 10px 20px; background: #e60023; color: white; border: none; border-radius: 24px; cursor: pointer; font-weight: 600; font-size: 14px;">Gönder</button>
+            </div>
+        </form>
+    </div>
+</div>
+                    <div class="pin-overlay-info"><p style="font-weight: bold; font-size: 14px; margin-bottom:20px">{{ pin.title }}</p></div>
+                </div>
+
+                <div class="pin-back" onclick="event.stopPropagation();">
+                    <div class="code-tabs">
+                        {% for snippet in pin.snippets %}
+                            <button class="code-tab {% if loop.first %}active{% endif %}" onclick="switchTab(event, 'code-{{ pin.id }}-{{ loop.index }}')">
+                                {{ snippet.language|upper }}
+                            </button>
+                        {% endfor %}
+                        <button class="code-tab" style="background-color: #e60023; color: white;" 
+                                    onclick="runPreview(event, '{{ pin.id }}')">
+                                    <i class="fas fa-play"></i>
+                            </button>
+                    </div>
+                    <div class="code-content-container">
+                        {% for snippet in pin.snippets %}
+                            <div id="code-{{ pin.id }}-{{ loop.index }}" class="code-pane {% if loop.first %}active{% endif %}" data-lang="{{ snippet.language }}">
+                                <pre class="code-block" style="margin:0; white-space: pre-wrap;"><code>{{ snippet.content }}</code></pre>
+                            </div>
+                        {% endfor %}
+                        <div id="preview-pane-{{ pin.id }}" class="code-pane" style="height: 100%; background: white;">
+            <iframe id="iframe-{{ pin.id }}" 
+                    style="width: 100%; height: 100%; border: none; background: white;">
+            </iframe>
+        </div>
+                        {% if not pin.snippets %}
+                            <p style="padding:20px; color:#666; text-align:center; font-size:12px;">Kod parçacığı yok.</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="pin-actions-bar">
+                        <button class="action-btn" onclick="likePin(event, '{{ pin.id }}')">
+                            <i class="fas fa-heart"></i> <span id="like-count-{{ pin.id }}">{{ pin.like_count }}</span>
+                        </button>
+                        <button class="action-btn" onclick="toggleComments(event, '{{ pin.id }}')">
+                            <i class="fas fa-comment"></i> <span id="comment-count-{{ pin.id }}">{{ pin.comments|length }}</span>
+                        </button>
+                        <button class="action-btn return-btn" onclick="rotateCardBack(event, this)">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+
+                    <div id="comments-section-{{ pin.id }}" class="comments-section" style="display: none;">
+                        <div class="comments-list">
+                            {% for comment in pin.comments %}
+                                <div class="comment-bubble">
+                                    <strong>{{ comment.user.username }}:</strong> {{ comment.content }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="comment-input-area">
+                            <input type="text" id="comment-input-{{ pin.id }}" placeholder="Yorum yaz..." class="comment-input">
+                            <button onclick="postComment(event, '{{ pin.id }}')" class="comment-send-btn"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% if not pins %}
+            <p style="grid-column: 1 / -1; text-align: center;">Henüz Pin bulunmamaktadır. Bir Pin yükleyin!</p>
+        {% endif %}
+    </div>
+    <div id="report-modal" class="modal-overlay" style="display: none; z-index: 4000;">
+    <div class="modal-content" style="width: 350px; text-align: center;">
+        <span onclick="closeReportModal()" class="close-btn" style="position:absolute; right:15px; top:15px;">&times;</span>
+        <h3 style="margin-bottom: 20px; color: #e60023;">Pini Raporla</h3>
+        <p style="font-size:13px; color:#666; margin-bottom:15px;">Bu pin ile ilgili sorun nedir?</p>
+
+        <form id="report-form" onsubmit="submitReport(event)">
+            <input type="hidden" id="report-pin-id" name="pin_id">
+            <select name="reason" required style="width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 8px;">
+                <option value="" disabled selected>Bir sebep seçin</option>
+                <option value="spam">Spam veya Yanıltıcı</option>
+                <option value="inappropriate">Uygunsuz İçerik (+18)</option>
+                <option value="violence">Şiddet veya Nefret Söylemi</option>
+                <option value="copyright">Telif Hakkı İhlali</option>
+                <option value="other">Diğer</option>
+            </select>
+            <button type="submit" style="background:#e60023; color:white; border:none; padding:10px 20px; border-radius:20px; font-weight:bold; cursor:pointer;">Gönder</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

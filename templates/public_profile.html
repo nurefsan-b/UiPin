@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}{{ profile_user.username }} | UiPin{% endblock %}
+
+{% block content %}
+<div class="public-profile-container">
+    
+    <div class="profile-header">
+        <div class="profile-avatar-wrapper">
+            <img src="{{ url_for('static', path=profile_user.profile_picture if profile_user.profile_picture else 'images/default_avatar.jpg') }}" class="profile-avatar-lg">
+        </div>
+        <h1 class="profile-username">{{ profile_user.first_name }} {{ profile_user.last_name }}</h1>
+        <p class="profile-handle">@{{ profile_user.username }}</p>
+        
+        <div class="profile-stats">
+            <span><strong>{{ user_pins|length }}</strong> Pin</span>
+            <span>•</span>
+            <span><strong>{{ user_boards|length }}</strong> Pano</span>
+        </div>
+
+        <div class="profile-actions">
+            {% if current_user and current_user.id != profile_user.id %}
+                
+                {# Avatar yolunu önceden belirle #}
+                {% set avatar_url = url_for('static', path=profile_user.profile_picture) if profile_user.profile_picture else url_for('static', path='images/default_avatar.jpg') %}
+                
+                <button class="btn-primary-action" 
+                        onclick="startDirectChat(event, '{{ profile_user.id }}', '{{ profile_user.username }}', '{{ avatar_url }}')">
+                    Mesaj Gönder
+                </button>
+
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="profile-tabs">
+        <button class="tab-btn active" onclick="switchProfileTab(event, 'created-pins')">Oluşturulanlar</button>
+        <button class="tab-btn" onclick="switchProfileTab(event, 'user-boards')">Panolar</button>
+    </div>
+
+    <div id="created-pins" class="tab-content active">
+        <div class="pin-grid">
+            {% for pin in user_pins %}
+             <div class="pin-card">
+                <div class="pin-inner">
+                    <div class="pin-front">
+                        <img src="{{ url_for('static', path=pin.image_path) }}" class="pin-image" onload="window.dispatchEvent(new Event('resize'));">
+                        <div class="pin-overlay">
+                            <div class="pin-overlay-header">
+                                <button onclick="event.stopPropagation(); openSaveModal('{{ pin.id }}')" class="btn-save-overlay">Kaydet</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <p style="text-align:center; color:#888; grid-column:1/-1;">Bu kullanıcı henüz Pin yüklememiş.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div id="user-boards" class="tab-content" style="display: none;">
+        <div class="boards-grid">
+            {% for board in user_boards %}
+            <div class="board-card" onclick="window.location.href='/boards/{{ board.id }}'">
+                <div class="board-preview">
+                    {% if board.pins and board.pins[0] %}
+                        <img src="{{ url_for('static', path=board.pins[0].image_path) }}" class="board-cover">
+                    {% else %}
+                        <div class="board-empty-cover"></div>
+                    {% endif %}
+                </div>
+                <div class="board-info">
+                    <h3>{{ board.title }}</h3>
+                    <p>{{ board.pins|length }} Pin</p>
+                </div>
+            </div>
+            {% else %}
+            <p style="text-align:center; color:#888; grid-column:1/-1;">Halka açık pano yok.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .public-profile-container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+    .profile-header { text-align: center; margin-bottom: 40px; }
+    .profile-avatar-lg { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; }
+    .profile-username { font-size: 32px; font-weight: bold; margin: 0; }
+    .profile-handle { color: #666; font-size: 14px; margin-bottom: 15px; }
+    .profile-stats { color: #333; font-weight: 500; margin-bottom: 20px; }
+    .btn-primary-action { background: #e60023; color: white; border: none; padding: 10px 24px; border-radius: 24px; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
+    .btn-primary-action:hover { transform: scale(1.05); background: #ad081b; }
+    
+    .profile-tabs { display: flex; justify-content: center; gap: 40px; margin-bottom: 20px; border-bottom: 1px solid #ddd; }
+    .tab-btn { background: none; border: none; padding: 10px 0; font-size: 16px; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; color: #555; }
+    .tab-btn.active { border-bottom: 3px solid #111; color: #111; }
+
+    /* Panolar Grid */
+    .boards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+    .board-card { cursor: pointer; }
+    .board-preview { height: 150px; border-radius: 16px; overflow: hidden; background: #eee; margin-bottom: 10px; display: flex; }
+    .board-cover { width: 100%; height: 100%; object-fit: cover; }
+    .board-empty-cover { width: 100%; height: 100%; background: #ddd; }
+    .board-info h3 { margin: 0; font-size: 16px; color: #111; }
+    .board-info p { margin: 0; font-size: 12px; color: #666; }
+</style>
+
+
+{% endblock %}

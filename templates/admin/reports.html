@@ -1,0 +1,79 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_content %}
+    <style>
+        /* Opaklık ayarını buraya taşıdık, editör kızmasın diye */
+        .admin-pin-thumb {
+            width: 50px; 
+            height: 50px; 
+            object-fit: cover; 
+            border-radius: 8px;
+            transition: opacity 0.3s;
+        }
+        /* Silinmişse soluk görünsün */
+        .deleted-style {
+            opacity: 0.5;
+            filter: grayscale(100%); /* Hatta biraz da gri yapalım */
+        }
+    </style>
+
+    <h1 style="margin-bottom: 20px;">Gelen Şikayetler</h1>
+    
+    {% if not reports %}
+        <p style="color:#888;">Bekleyen şikayet yok. Harika! 🎉</p>
+    {% else %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Pin</th>
+                    <th>Sebep</th>
+                    <th>Raporlayan</th>
+                    <th>Tarih</th>
+                    <th>İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in reports %}
+                <tr>
+                    <td>
+                        {% if r.pin %}
+                            <div style="position:relative; display:inline-block;">
+                                <a href="/home?target_pin={{ r.pin.id }}" target="_blank">
+                                    <img src="{{ url_for('static', path=r.pin.image_path) }}" 
+                                         class="admin-pin-thumb {{ 'deleted-style' if r.pin.is_deleted else '' }}">
+                                </a>
+                                {% if r.pin.is_deleted %}
+                                    <span style="position:absolute; top:0; left:0; background:red; color:white; font-size:10px; padding:2px 4px; border-radius:4px;">Silindi</span>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <span style="color:red;">Veri yok</span>
+                        {% endif %}
+                    </td>
+                    <td><span style="background:#333; padding:5px 10px; border-radius:4px; font-size:12px;">{{ r.reason }}</span></td>
+                    <td>{{ r.reporter.username }}</td>
+                    <td>{{ r.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        <div style="display:flex; gap:10px;">
+                            {% if r.pin and not r.pin.is_deleted %}
+                            <button class="btn-delete" onclick="resolveReport('{{ r.id }}', 'delete_pin')" title="Pini Sil">
+                                <i class="fas fa-trash"></i> Sil
+                            </button>
+                            {% else %}
+                            <button disabled style="background:#555; color:#aaa; border:none; padding:5px 10px; border-radius:4px; cursor:not-allowed;">
+                                <i class="fas fa-trash"></i> Silindi
+                            </button>
+                            {% endif %}
+                            
+                            <button onclick="resolveReport('{{ r.id }}', 'dismiss')" style="background:#555; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;" title="Raporu Kapat">
+                                <i class="fas fa-times"></i> Kapat
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+{% endblock %}

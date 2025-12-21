@@ -1,0 +1,31 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_content %}
+    <h1 style="margin-bottom: 20px;">Tüm Pinler</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Görsel</th>
+                <th>Başlık</th>
+                <th>Yükleyen</th>
+                <th>Tarih</th>
+                <th>İşlem</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pin in pins %}
+            <tr>
+                <td>
+                    <img src="{{ url_for('static', path=pin.image_path) }}" style="width:50px; height:50px; object-fit:cover; border-radius:8px;">
+                </td>
+                <td>{{ pin.title }}</td>
+                <td>{{ pin.owner.username }}</td>
+                <td>{{ pin.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    <button class="btn-delete" onclick="deleteItem('/admin/pins/delete/{{ pin.id }}')">Sil</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

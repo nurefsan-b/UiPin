@@ -1,0 +1,64 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_content %}
+    <h1 style="margin-bottom: 20px;">Genel Bakış</h1>
+    
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.users }}</div>
+            <div class="stat-label">Toplam Kullanıcı</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.pins }}</div>
+            <div class="stat-label">Toplam Pin</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.boards }}</div>
+            <div class="stat-label">Toplam Pano</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.comments }}</div>
+            <div class="stat-label">Yorumlar</div>
+        </div>
+    </div>
+
+    <h2 style="margin-bottom: 15px;">Son Katılan Kullanıcılar</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Kullanıcı Adı</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>İşlem</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in recent_users %}
+            <tr>
+                <td>#{{ u.id }}</td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <img src="{{ url_for('static', path=u.profile_picture if u.profile_picture else 'images/default_avatar.jpg') }}" style="width:30px; height:30px; border-radius:50%;">
+                        {{ u.username }}
+                    </div>
+                </td>
+                <td>{{ u.email }}</td>
+                <td>
+                    {% if u.is_superuser %}
+                        <span style="color:#e60023; font-weight:bold;">Admin</span>
+                    {% else %}
+                        Üye
+                    {% endif %}
+                </td>
+                <td>
+                    {% if not u.is_superuser %}
+                    <button class="btn-delete" onclick="deleteItem('/admin/users/delete/{{ u.id }}')">Yasakla</button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UiPin - Giriş Yap & Kayıt Ol</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        /* --- TEMEL AYARLAR --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        
+        body {
+            display: flex; height: 100vh; width: 100%;
+            overflow: hidden; background-color: #272829;
+        }
+
+        /* SOL TARAF */
+        .login-left {
+            flex: 1; background-color: white; position: relative;
+            display: flex; justify-content: center; align-items: center; overflow: hidden;
+        }
+        .abstract-shape {
+            position: absolute; width: 600px; height: 600px; background-color: black; 
+            border-radius: 44% 56% 49% 51% / 60% 39% 61% 40%; z-index: 1;
+            animation: float 6s ease-in-out infinite;
+        }
+        .hero-image {
+            position: relative; width: 400px; height: 445px; object-fit: cover;
+            border-radius: 150px 150px 20px 20px; z-index: 2;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+        }
+        @keyframes float {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-10px, 20px) rotate(5deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        /* SAĞ TARAF */
+        .login-right {
+            flex: 1; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; padding: 40px;
+            background-color: black; overflow-y: auto; 
+        }
+        .form-container { width: 100%; max-width: 420px; }
+        .form-header { margin-bottom: 20px; text-align: center; }
+        .brand-logo {
+            font-size: 42px; font-weight: 800; color: white;
+            letter-spacing: -2px; margin-bottom: 5px; cursor: default;
+        }
+        .form-header h2 { font-size: 20px; color: white; margin-bottom: 5px; font-weight: 600; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
+        .form-row .form-group { flex: 1; margin-bottom: 0; }
+
+        .form-group label {
+            display: block; font-size: 12px; color: #ffffff;
+            margin-bottom: 5px; font-weight: 600;
+        }
+        .form-input {
+            width: 100%; padding: 12px 15px;
+            background-color: #E0E5EB; border: none; border-radius: 10px;
+            font-size: 13px; color: #333; transition: background 0.3s;
+        }
+        .form-input:focus { background-color: #fff; border: 2px solid #e60023; outline: none; }
+        
+        .submit-btn {
+            width: 100%; padding: 14px;
+            background-color: #e60023; color: white;
+            font-weight: bold; border: none; border-radius: 24px;
+            font-size: 16px; cursor: pointer; margin-top: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(230, 0, 35, 0.4); }
+
+        .toggle-text {
+            text-align: center; margin-top: 20px;
+            font-size: 13px; color: #666;
+        }
+        .toggle-link {
+            color: #e60023; font-weight: bold; cursor: pointer;
+            text-decoration: none; transition: color 0.2s;
+        }
+
+        /* HATA VE BAŞARI KUTULARI */
+        .error-banner {
+            background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c;
+            padding: 12px; border-radius: 8px; margin-top: 15px; margin-bottom: 5px;
+            font-size: 13px; display: flex; align-items: center; gap: 10px;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .success-banner {
+            background-color: #dcfce7; border: 1px solid #22c55e; color: #15803d;
+            padding: 12px; border-radius: 8px; margin-top: 15px; margin-bottom: 5px;
+            font-size: 13px; display: flex; align-items: center; gap: 10px;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .hidden { display: none; }
+        @media (max-width: 768px) { .login-left { display: none; } .login-right { padding: 20px; } }
+    </style>
+</head>
+<body>
+
+    <div class="login-left">
+        <div class="abstract-shape"></div>
+        <img src="/static/images/UiPin_Logo.jpg" alt="UiPin" class="hero-image">
+    </div>
+
+    <div class="login-right">
+        
+        <div id="register-container" class="form-container">
+            <div class="form-header">
+                <div class="brand-logo">UiPin</div> 
+                <h2>Ücretsiz Hesap Oluştur</h2>
+                <p style="color:#888; font-size:14px;">Aramıza katıl, ilhamı yakala!</p>
+            </div>
+
+            <form id="registerForm">
+                <div class="form-row">
+                    <div class="form-group"><label>Ad</label><input type="text" name="first_name" class="form-input"></div>
+                    <div class="form-group"><label>Soyad</label><input type="text" name="last_name" class="form-input"></div>
+                </div>
+                <div class="form-group"><label>Kullanıcı Adı *</label><input type="text" name="username" class="form-input" required></div>
+                <div class="form-group"><label>E-posta *</label><input type="email" name="email" class="form-input" required></div>
+                <div class="form-group"><label>Şifre *</label><input type="password" name="password" class="form-input" required></div>
+                
+                <div class="form-row">
+                    <div class="form-group"><label>Yaş</label><input type="number" name="age" class="form-input"></div>
+                    <div class="form-group">
+                        <label>Cinsiyet</label>
+                        <select name="gender" class="form-input">
+                            <option value="" disabled selected>Seçiniz</option>
+                            <option value="male">Erkek</option>
+                            <option value="female">Kadın</option>
+                            <option value="other">Diğer</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="registerErrorMsg" class="error-banner" style="display: none;">
+                    <i class="fas fa-exclamation-circle"></i> <span></span>
+                </div>
+                <button type="submit" class="submit-btn">Hesap Oluştur</button>
+            </form>
+
+            <div class="toggle-text">
+                Zaten hesabın var mı? <span class="toggle-link" onclick="showLogin()">Giriş Yap</span>
+            </div>
+        </div>
+
+        <div id="login-container" class="form-container hidden">
+            <div class="form-header">
+                <div class="brand-logo">UiPin</div>
+                <h2>Tekrar Hoşgeldin!</h2>
+            </div>
+            
+            <div id="loginSuccessMsg" class="success-banner" style="display: none;">
+                <i class="fas fa-check-circle"></i> <span>Kayıt başarılı! Giriş yapabilirsin.</span>
+            </div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Kullanıcı Adı</label>
+                    <input type="text" name="username" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label>Şifre</label>
+                    <input type="password" name="password" class="form-input" required>
+                </div>
+                
+                <div id="loginErrorMsg" class="error-banner" style="display: none;">
+                    <i class="fas fa-exclamation-circle"></i> <span></span>
+                </div>
+                <button type="submit" class="submit-btn">Giriş Yap</button>
+            </form>
+
+            <div class="toggle-text">
+                Hesabın yok mu? <span class="toggle-link" onclick="showRegister()">Hemen Kayıt Ol</span>
+            </div>
+        </div>
+
+    </div>
+    <script src="{{ url_for('static', path='/js/actions.js') }}"></script>
+<script>
+    // Login sayfası DOMContentLoaded olayı (actions.js içinde yoksa buraya ekle)
+    document.addEventListener('DOMContentLoaded', () => {
+        // Hata mesajı gizleme vs. işlemleri
+    });
+</script>
+</body>
+</html>

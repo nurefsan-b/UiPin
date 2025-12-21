@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block title %}Profil Ayarları | UiPin{% endblock %}
+
+{% block content %}
+<style>
+    /* --- SAYFA DÜZENİ --- */
+    .profile-page-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 85vh;
+        padding: 40px 20px;
+        position: relative;
+    }
+
+    /* Ana Kart */
+    .settings-card {
+        display: flex;
+        width: 1000px;
+        max-width: 100%;
+        background-color: #1e1e1e;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        border: 1px solid #333;
+        min-height: 600px;
+    }
+
+    /* SOL MENÜ */
+    .settings-sidebar {
+        width: 280px;
+        background-color: #161616;
+        padding: 30px;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid #333;
+        flex-shrink: 0;
+    }
+
+    /* SAĞ İÇERİK */
+    .settings-content {
+        flex: 1;
+        padding: 40px;
+        background-color: #1e1e1e;
+        position: relative;
+    }
+
+    /* Avatar */
+    .avatar-container { text-align: center; margin-bottom: 20px; position: relative; }
+    
+    .user-avatar-large {
+        width: 120px; height: 120px;
+        border-radius: 50%; background: #333;
+        display: inline-flex; align-items: center; justify-content: center;
+        overflow: hidden;
+        border: 3px solid #e60023;
+        margin: 0 auto;
+        position: relative;
+    }
+    .user-avatar-large img { width: 100%; height: 100%; object-fit: cover; }
+    
+    .avatar-upload-btn {
+        margin-top: 10px;
+        color: #888;
+        font-size: 13px;
+        cursor: pointer;
+        transition: 0.2s;
+        display: inline-block;
+        padding: 5px 10px;
+        border: 1px solid #333;
+        border-radius: 15px;
+    }
+    .avatar-upload-btn:hover { background: #333; color: white; }
+
+    /* Menü */
+    .sidebar-menu-items { margin-top: 20px; }
+    .menu-item {
+        padding: 12px 15px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        border-radius: 8px;
+        color: #bbb;
+        transition: 0.2s;
+        display: flex; align-items: center; gap: 10px;
+        font-size: 15px;
+    }
+    .menu-item:hover { background-color: #2a2a2a; color: white; }
+    .menu-item.active { background-color: #e60023; color: white; font-weight: 600; }
+    .menu-item i { width: 20px; text-align: center; }
+
+    /* Form */
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 8px; color: #aaa; font-size: 13px; font-weight: 500; }
+    
+    .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        background: #2b2b2b;
+        border: 1px solid #444;
+        border-radius: 12px;
+        color: white;
+        outline: none;
+        font-size: 14px;
+        transition: 0.3s;
+    }
+    .form-control:focus { border-color: #e60023; background: #333; }
+    
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    
+    /* Butonlar */
+    .btn-save-primary {
+        background-color: #e60023; color: white;
+        border: none; padding: 14px 30px;
+        border-radius: 30px; cursor: pointer; font-weight: bold;
+        float: right;
+        transition: transform 0.2s;
+    }
+    .btn-save-primary:hover { transform: scale(1.05); background-color: #ad081b; }
+    
+    /* Çıkış */
+    .sidebar-footer { margin-top: auto; padding-top: 20px; border-top: 1px solid #333; }
+    .btn-logout-sidebar {
+        display: block; width: 100%; text-align: center;
+        padding: 12px; color: #ff4444; border: 1px solid #ff4444;
+        border-radius: 8px; text-decoration: none;
+        transition: 0.2s;
+    }
+    .btn-logout-sidebar:hover { background: rgba(255, 68, 68, 0.1); }
+    
+    /* Pin Kartları */
+    #myPinsContainer {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 20px;
+    }
+    .pin-card {
+        background: #2b2b2b;
+        border-radius: 16px;
+        overflow: hidden;
+        position: relative;
+        transition: transform 0.2s;
+    }
+    .pin-card:hover { transform: translateY(-5px); }
+    .pin-card img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        display: block;
+    }
+    .pin-actions {
+        padding: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .btn-delete-pin {
+        background: transparent; border: none; color: #ff4444; 
+        cursor: pointer; font-size: 14px;
+    }
+    .btn-delete-pin:hover { text-decoration: underline; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .settings-card { flex-direction: column; }
+        .settings-sidebar { width: 100%; border-right: none; border-bottom: 1px solid #333; }
+        .form-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="profile-page-wrapper">
+    <div class="settings-card">
+        
+        <div class="settings-sidebar">
+            <div class="avatar-container">
+                <div class="user-avatar-large">
+                    {% if user.profile_picture %}
+                        <img id="avatarPreviewImg" src="{{ url_for('static', path=user.profile_picture) }}" alt="Avatar">
+                    {% else %}
+                        <img id="avatarPreviewImg" src="https://via.placeholder.com/150/333333/FFFFFF/?text={{ user.username[0].upper() }}" alt="Avatar">
+                    {% endif %}
+                </div>
+                
+                <div class="avatar-upload-btn" onclick="document.getElementById('realAvatarInput').click()">
+                    <i class="fas fa-camera"></i> Fotoğrafı Değiştir
+                </div>
+            </div>
+
+            <h3 style="text-align:center; color:white; margin:5px 0;">{{ user.username }}</h3>
+            <p style="text-align:center; color:#666; font-size:13px; margin-bottom:20px;">{{ user.email }}</p>
+            
+            <div class="sidebar-menu-items">
+                <div class="menu-item active" id="menuEdit" onclick="switchProfile('edit')">
+                    <i class="fas fa-user-cog"></i> Profili Düzenle
+                </div>
+
+                <div class="menu-item" id="menuPins" onclick="switchProfile('pins')">
+                    <i class="fas fa-thumbtack"></i> Pinlerim
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <a href="/users/logout" class="btn-logout-sidebar">
+                    <i class="fas fa-sign-out-alt"></i> Çıkış Yap
+                </a>
+            </div>
+        </div>
+
+        <div class="settings-content">
+
+            <div id="editProfileSection">
+                <div style="margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px;">
+                     <h1 style="margin:0; font-size:24px; color:white;">Profili Düzenle</h1>
+                     <p style="margin:5px 0 0; color:#888;">Kişisel bilgilerini buradan güncelleyebilirsin.</p>
+                </div>
+
+                {% if message %}
+                <div style="background: rgba(46, 204, 113, 0.2); color:#2ecc71; padding:15px; border-radius:8px; margin-bottom:20px; border: 1px solid #2ecc71;">
+                    <i class="fas fa-check-circle"></i> {{ message }}
+                </div>
+                {% endif %}
+                
+                {% if error %}
+                <div style="background: rgba(231, 76, 60, 0.2); color:#e74c3c; padding:15px; border-radius:8px; margin-bottom:20px; border: 1px solid #e74c3c;">
+                    <i class="fas fa-exclamation-circle"></i> {{ error }}
+                </div>
+                {% endif %}
+
+                <form action="/profile/update" method="POST" enctype="multipart/form-data">
+                    <input type="file" id="realAvatarInput" name="profile_picture" style="display: none;" accept="image/*" onchange="previewImage(this)">
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Ad</label>
+                            <input type="text" name="first_name" class="form-control" value="{{ user.first_name if user.first_name else '' }}">
+                        </div>
+                        <div class="form-group">
+                            <label>Soyad</label>
+                            <input type="text" name="last_name" class="form-control" value="{{ user.last_name if user.last_name else '' }}">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Kullanıcı Adı</label>
+                        <input type="text" name="username" class="form-control" value="{{ user.username }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>E-posta</label>
+                        <input type="email" name="email" class="form-control" value="{{ user.email }}" required>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Yaş</label>
+                            <input type="number" name="age" class="form-control" value="{{ user.age if user.age else '' }}">
+                        </div>
+                        <div class="form-group">
+                            <label>Cinsiyet</label>
+                            <select name="gender" class="form-control">
+                                <option value="Belirtilmemiş">Seçiniz</option>
+                                <option value="Kadın" {% if user.gender == 'Kadın' %}selected{% endif %}>Kadın</option>
+                                <option value="Erkek" {% if user.gender == 'Erkek' %}selected{% endif %}>Erkek</option>
+                                <option value="Diğer" {% if user.gender == 'Diğer' %}selected{% endif %}>Diğer</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <h3 style="color:white; margin-top:40px; margin-bottom: 20px; border-bottom:1px solid #333; padding-bottom:10px;">Güvenlik</h3>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Mevcut Şifre (Değişiklik için gerekli)</label>
+                            <input type="password" name="current_password" class="form-control" placeholder="••••••">
+                        </div>
+                        <div class="form-group">
+                            <label>Yeni Şifre</label>
+                            <input type="password" name="new_password" class="form-control" placeholder="••••••">
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px; overflow: hidden;">
+                        <button type="submit" class="btn-save-primary">Değişiklikleri Kaydet</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="myPinsSection" style="display: none;">
+                <div style="margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px;">
+                    <h1 style="margin:0; font-size:24px; color:white;">Pinlerim</h1>
+                    <p style="margin:5px 0 0; color:#888;">Senin oluşturduğun veya yüklediğin gönderiler.</p>
+                </div>
+                
+                <div id="myPinsContainer">
+                    </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}

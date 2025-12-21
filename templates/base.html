@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}UiPin{% endblock %}</title> 
+    
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body data-current-user-id="{{ current_user.id if current_user else (user.id if user else '0') }}">
+
+    <div class="sidebar-container">
+        <a href="/" class="sidebar-logo">
+            <img src="{{ url_for('static', path='images/uipin-logo.jpg') }}" alt="UiPin Logo" class="custom-logo">
+        </a>
+        
+        <div class="sidebar-menu">
+            
+            {% set active_user = current_user if current_user else user %}
+            
+            {% if active_user and active_user.is_superuser %}
+            <a href="/admin" class="sidebar-icon-link" title="Admin Paneli" style="color: #e60023;">
+                  <i class="fas fa-shield-alt"></i>
+            </a>
+            {% endif %}
+            
+            <a href="/" class="sidebar-icon-link {% if active_page == ' ' %}active{% endif %}" title="Ana Sayfa">
+                <i class="fas fa-home"></i>
+            </a>     
+            
+            <div class="sidebar-dropdown-container" id="explore-dropdown-container">
+                <a href="#" class="sidebar-icon-link {% if active_page == 'explore' %}active{% endif %}" id="explore-icon" title="Keşfet">
+                    <i class="fas fa-compass"></i>
+                </a>
+                <div class="sidebar-dropdown-content" id="explore-menu">
+    <div class="dropdown-header">Keşfet</div>
+    
+    <div class="dropdown-subheader">Bileşenler</div>
+    <a href="/?tag=UIComponent" class="dropdown-link-item">UI Bileşenleri</a>
+    <a href="/?tag=Animation" class="dropdown-link-item">Animasyon</a>
+    
+    <div class="dropdown-subheader">Formlar</div>
+    <a href="/?tag=Forms" class="dropdown-link-item">Formlar ve Girişler</a>
+    
+    <div class="dropdown-subheader">Teknolojiler</div>
+    <a href="/?tag=VanillaJS" class="dropdown-link-item">Javascript (Vanilla)</a>
+    <a href="/?tag=CSS" class="dropdown-link-item">CSS & Tasarım</a>
+</div>
+            </div>
+            
+            <div class="sidebar-dropdown-container" id="create-dropdown-container">
+                <a href="#" class="sidebar-icon-link {% if active_page == 'create' %}active{% endif %}" id="create-icon" title="Oluştur">
+                    <i class="fas fa-plus"></i>
+                </a>
+                <div class="sidebar-dropdown-content" id="create-menu">
+                    <div class="dropdown-header">Oluştur</div>
+                    
+                    <a href="#" class="dropdown-link-item" id="open-create-pin-modal">
+                        <div class="link-title">Pin oluştur</div>
+                        <div class="link-description">Görselinizi paylaşın.</div>
+                    </a>
+                    
+                    <a href="#" class="dropdown-link-item" id="open-create-board-modal">
+                        <div class="link-title">Pano oluştur</div>
+                        <div class="link-description">Pinlerinizi düzenleyin.</div>
+                    </a>
+                </div>
+            </div>
+            
+            <a href="/boards" class="sidebar-icon-link {% if active_page == 'boards' %}active{% endif %}" title="Panolarım">
+                <i class="fas fa-clipboard"></i>
+            </a>
+            
+            <a href="#" class="sidebar-icon-link" id="notification-icon" title="Bildirimler">
+                <i class="fas fa-bell"></i>
+            </a> 
+            <a href="#" class="sidebar-icon-link" id="messages-icon" title="Mesajlar">
+                <i class="fas fa-comment-dots"></i>
+            </a>
+            
+            <a href="/profile" class="sidebar-icon-link {% if active_page == 'profile' %}active{% endif %}" title="Profil">
+                <i class="fas fa-user-circle"></i>
+            </a>
+        </div> 
+    </div>
+    
+    <div id="notification-panel" class="notification-panel">
+        <div class="notification-header">
+            <h3>Güncellemeler</h3>
+            <button id="close-notifications" class="close-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="notification-content"></div>
+    </div>
+
+    <div id="messages-panel" class="messages-panel">
+        <div class="notification-header" style="justify-content: space-between;">
+            <h3>Sohbetler</h3>
+            <div style="display:flex; gap:10px;">
+                <button id="back-to-list-btn" class="close-btn" style="display:none;"><i class="fas fa-arrow-left"></i></button>
+                <button id="close-messages" class="close-btn"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        <div class="message-search-container">
+            <input type="text" id="message-search" placeholder="Kişi ara..." />
+        </div>
+        <div class="message-user-list-content"></div> 
+        <div id="chat-window" class="chat-window" style="display: none;">
+            <div class="chat-header">
+                <img id="chat-user-avatar" src="" alt="Avatar" class="user-avatar">
+                <h3 id="chat-user-name">Kullanıcı Adı</h3>
+            </div>
+            <div id="chat-messages" class="chat-messages"></div>
+            <div class="chat-input-area">
+                <input type="text" id="message-input" placeholder="Mesaj yaz..." />
+                <button class="comment-send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="create-pin-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <button id="close-modal-btn" class="close-btn" style="position: absolute; top: 10px; right: 10px;color:#1A1A1A">&times;</button>
+            <h2>Yeni Pin Oluştur</h2>
+            <form id="create-pin-form">
+                <div style="display: flex; gap: 20px;">
+                    <div class="upload-area" style="flex: 1; border: 2px dashed #ccc; border-radius: 16px; padding: 20px; text-align: center; cursor: pointer; display: flex; align-items: center; justify-content: center; background: #f9f9f9; min-height: 300px;">
+                        <div id="upload-placeholder">
+                            <i class="fas fa-arrow-up" style="font-size: 24px; margin-bottom: 10px;color:#1A1A1A;"></i>
+                            <p style="color: #1A1A1A;">Yüklemek için tıklayın</p>
+                        </div>
+                        <input type="file" name="image_file" id="pin-file-input" style="display: none;" required accept="image/*">
+                        <img id="preview-image" style="max-width: 100%; max-height: 300px; display: none; border-radius: 8px;">
+                    </div>
+                    
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 15px;">
+                        <input type="text" name="title" placeholder="Başlık ekle" required style="font-size: 24px; font-weight: bold; border: none; border-bottom: 1px solid #ddd; padding: 10px; outline: none;">
+                        <textarea name="description" placeholder="Açıklama..." style="border: 1px solid #ddd; padding: 10px; border-radius: 8px; resize: none; height: 60px;"></textarea>
+
+                       <div style="margin-top: 10px;">
+    <select name="tag" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; background: white; outline: none;">
+        <option value="" disabled selected>Bir Etiket Seçin</option>
+        <option value="UIComponent">UI Bileşenleri</option>
+        <option value="Animation">Animasyon</option>
+        <option value="Forms">Formlar ve Girişler</option>
+        <option value="VanillaJS">Javascript (Vanilla)</option>
+        <option value="CSS">CSS & Tasarım</option>
+        <option value="Other">Diğer</option>
+    </select>
+</div>
+                        
+                        <div id="code-inputs-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 8px;">
+                            <label style="font-weight: bold; font-size: 12px; display:block; margin-bottom:5px;">Kod Parçacıkları:</label>
+                        </div>
+                        <button type="button" id="add-code-btn" style="background: #eee; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; align-self: flex-start;">+ Kod Bloğu Ekle</button>
+                        
+                        <input type="hidden" name="snippets_json" id="snippets-json-field">
+                        <button type="submit" style="background-color: #e60023; color: white; border: none; padding: 12px; border-radius: 20px; font-weight: bold; cursor: pointer; margin-top: auto;">Yayımla</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="create-board-modal-global" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="width: 400px; text-align: center;">
+            <span id="close-board-modal-global" class="close-btn" style="position:absolute; right:20px; top:20px; cursor:pointer; font-size:24px;color:#1A1A1A;">&times;</span>
+            <h2 style="margin-bottom:20px;color:#1A1A1A;">Pano Oluştur</h2>
+            
+            <form action="/create/board" method="POST" style="display: flex; flex-direction: column; gap: 15px;">
+                <div style="text-align: left;">
+                    <label style="font-size: 12px; font-weight: bold; color: #555;">İsim</label>
+                    <input type="text" name="title" placeholder='Örn: "Gitmek istediğim yerler" veya "Tarifler"' required 
+                           style="width: 100%; padding: 12px; border-radius: 12px; border: 2px solid #ddd; margin-top: 5px; box-sizing: border-box;">
+                </div>
+                
+                <div style="text-align: left;">
+                    <label style="font-size: 12px; font-weight: bold; color: #555;">Açıklama (Opsiyonel)</label>
+                    <textarea name="description" placeholder="Bu pano ne hakkında?" 
+                              style="width: 100%; padding: 12px; border-radius: 12px; border: 2px solid #ddd; margin-top: 5px; resize: none; height: 80px; box-sizing: border-box;"></textarea>
+                </div>
+
+                <div style="text-align: left; display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" name="is_secret" id="secret-check" style="width: 16px; height: 16px;">
+                    <label for="secret-check" style="font-size: 14px; font-weight: bold;color:#1A1A1A;">Bu panoyu gizli tut</label>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                    <button type="submit" style="background-color: #e60023; color: #1A1A1A; border: none; padding: 12px 24px; border-radius: 24px; font-weight: bold; cursor: pointer;">Oluştur</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+   <div class="page-content">
+    <div class="nav">
+        {% if active_page != 'profile' %}
+            <div class="nav-logo" style="visibility: hidden;"><i class="fab fa-pinterest"></i></div> 
+            
+            {% block search %}
+            <div class="nav-search">
+                <input type="text" id="global-search-input" placeholder="Ara..." />
+            </div>
+            {% endblock %}
+        {% endif %}
+    </div>
+    {% block content %}{% endblock %}
+</div> 
+
+    <div id="select-board-modal" class="modal-overlay" style="display: none; z-index: 3000;">
+        <div class="modal-content" style="width: 400px; padding: 0; overflow: hidden; max-height: 80vh; display: flex; flex-direction: column;">
+            <div style="padding: 20px; text-align: center; border-bottom: 1px solid #eee; position: relative;">
+                <h3 style="margin: 0; font-size: 18px;">Panoya Kaydet</h3>
+                <span onclick="closeSaveModal()" class="close-btn" style="position:absolute; right:15px; top:15px; cursor:pointer;">&times;</span>
+            </div>
+            <div id="board-list-container" style="overflow-y: auto; padding: 10px; flex: 1;">
+                <p style="text-align: center; color: #888;">Yükleniyor...</p>
+            </div>
+            <div style="padding: 15px; border-top: 1px solid #eee; text-align: center; background: #f9f9f9; cursor: pointer;"
+                 onclick="closeSaveModal(); document.getElementById('create-board-modal-global').style.display='flex'">
+                <i class="fas fa-plus"></i> Yeni Pano Oluştur
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; justify-content: center; align-items: center; }
+        .modal-content { background: white; width: 800px; padding: 30px; border-radius: 32px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .dropdown-link-item { white-space: nowrap; }
+        
+        .board-select-item { display: flex; align-items: center; padding: 10px; border-radius: 8px; transition: 0.2s; cursor: pointer; }
+        .board-select-item:hover { background-color: #f0f0f0; }
+        .board-mini-cover { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; margin-right: 15px; background: #ddd; }
+        .board-select-name { flex: 1; font-weight: bold; font-size: 14px; color: black; }
+        .btn-save-mini { background-color: #e60023; color: white; border: none; padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .btn-save-mini:hover { background-color: #ad081b; }
+    </style>
+    
+    <script src="{{ url_for('static', path='/js/layout.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/socket.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/actions.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/main.js') }}"></script>
+    
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

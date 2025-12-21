@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Panolarım | UiPin{% endblock %}
+
+{% block content %}
+<div class="boards-page-container">
+    
+    <div class="boards-header">
+        <h1>Panoların</h1>
+        <button onclick="document.getElementById('new-board-modal').style.display='flex'" class="btn-create-board">
+            <i class="fas fa-plus"></i> Pano Oluştur
+        </button>
+    </div>
+
+    <div class="boards-grid">
+        {% for board in boards %}
+       <div class="board-card" onclick="this.classList.toggle('flipped')">
+    <div class="board-inner">
+        
+        <div class="board-front">
+            {% if board.pins and board.pins[0].image_path %}
+                <div class="board-cover" style="background-image: url('/static/{{ board.pins[0].image_path }}');"></div>
+            {% else %}
+                <div class="board-cover" style="background: linear-gradient(135deg, #333, #444);">
+                    <i class="fas fa-images" style="font-size: 40px; color: rgba(255,255,255,0.1);"></i>
+                </div>
+            {% endif %}
+            
+            <div class="board-info-front">
+                <h3>{{ board.title }}</h3>
+                <p>{{ board.pin_count }} Pin</p>
+            </div>
+        </div>
+
+        <div class="board-back">
+            <h3 style="margin-bottom: 10px;">{{ board.title }}</h3>
+            <p style="font-size: 12px; color: #888; margin-bottom: 20px;">
+                {{ board.description if board.description else "Açıklama yok." }}
+            </p>
+            
+            <a href="/board/{{ board.id }}" class="btn-board-action btn-go">
+                İçini Gör <i class="fas fa-arrow-right"></i>
+            </a>
+            
+            </div>
+
+    </div>
+</div>
+        {% endfor %}
+    </div>
+</div>
+
+<div id="new-board-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="width: 400px; text-align: center;">
+        <span onclick="document.getElementById('new-board-modal').style.display='none'" class="close-btn" style="position:absolute; right:20px; top:20px;">&times;</span>
+        <h2>Pano Oluştur</h2>
+        <form action="/create/board" method="POST" style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+            <input type="text" name="title" placeholder="Pano Adı (Örn: Tasarımlar)" required style="padding: 12px; border-radius: 16px; border: 1px solid #333; background: #121212; color: white;">
+            <textarea name="description" placeholder="Açıklama (İsteğe bağlı)" style="padding: 12px; border-radius: 16px; border: 1px solid #333; background: #121212; color: white;"></textarea>
+            <button type="submit" class="btn-save-primary">Oluştur</button>
+        </form>
+    </div>
+</div>
+
+<style>
+    .boards-page-container { padding: 40px; max-width: 1400px; margin: 0 auto; }
+    .boards-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; color: white; }
+    
+    .boards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 24px; }
+    
+    .board-card { 
+        background-color: #1e1e1e; border-radius: 24px; overflow: hidden; cursor: pointer; 
+        transition: transform 0.2s; border: 1px solid #333;
+    }
+    .board-card:hover { transform: translateY(-5px); border-color: #555; }
+    
+    .board-cover { height: 160px; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; }
+    
+    .board-info { padding: 20px; }
+    .board-info h3 { margin: 0; font-size: 18px; color: white; }
+    .board-info p { margin: 5px 0 0; font-size: 14px; color: #888; }
+
+    .btn-create-board {
+        background-color: #333; color: white; border: none; padding: 12px 20px; 
+        border-radius: 24px; font-weight: bold; cursor: pointer; transition: 0.2s;
+    }
+    .btn-create-board:hover { background-color: #555; }
+</style>
+{% endblock %}
