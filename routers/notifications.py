@@ -12,13 +12,10 @@ from database import get_db
 from models import Notification, User, Pin
 from routers.users import get_current_user
 from notification_service import create_notification
-
-# WebSocket yöneticisini çağırıyoruz (Anlık bildirim için)
 from routers.messages import manager 
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
-# --- ŞEMA ---
 class NotificationOut(BaseModel):
     id: int
     actor_username: str
@@ -33,7 +30,7 @@ class NotificationOut(BaseModel):
         from_attributes = True
 
 
-# --- ENDPOINT: BİLDİRİMLERİ GETİR ---
+#ENDPOINT: BİLDİRİMLERİ GETİR
 @router.get("/", response_model=list[NotificationOut])
 async def get_notifications(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user:
@@ -48,8 +45,6 @@ async def get_notifications(db: AsyncSession = Depends(get_db), current_user: Us
     )
     
     notifs = result.scalars().all()
-    
-    # Pydantic formatına çevir
     response = []
     for n in notifs:
         response.append(NotificationOut(
@@ -65,9 +60,7 @@ async def get_notifications(db: AsyncSession = Depends(get_db), current_user: Us
         
     return response
 
-# --- ENDPOINT: OKUNDU OLARAK İŞARETLE ---
+#  ENDPOINT: OKUNDU OLARAK İŞARETLE
 @router.post("/mark-read")
 async def mark_read(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    # Basitçe hepsini okundu yapalım (Geliştirilebilir)
-    # Burada update sorgusu yazılabilir ama şimdilik pas geçiyorum, liste açılınca okunmuş saysın.
     pass

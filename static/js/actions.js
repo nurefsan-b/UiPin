@@ -1,23 +1,23 @@
 
 //pin silme fonksiyonu
-async function deletePin(pinId) {
-    if(!confirm("Bu pini silmek istediğine emin misin?")) return;
-    try {
-        const res = await fetch(`/pins/${pinId}`, { method: 'DELETE' }); // Düzeltildi
-        if(res.ok) {
-            // Kartı ekrandan sil
-            const card = document.getElementById(`pin-card-${pinId}`);
-            if(card) {
-                card.remove();
-                applyMasonry(); // Düzeni tazele
-            } else {
-                location.reload();
-            }
-        } else {
-            alert("Silinemedi!");
-        }
-    } catch(e) { alert("Hata oluştu."); }
-}
+//async function deletePin(pinId) {
+//    if(!confirm("Bu pini silmek istediğine emin misin?")) return;
+//    try {
+//        const res = await fetch(`/pins/${pinId}`, { method: 'DELETE' }); // Düzeltildi
+//        if(res.ok) {
+//            // Kartı ekrandan sil
+//            const card = document.getElementById(`pin-card-${pinId}`);
+//            if(card) {
+//                card.remove();
+//                applyMasonry(); // Düzeni tazele
+//            } else {
+//                location.reload();
+//            }
+//        } else {
+//            alert("Silinemedi!");
+//        }
+//    } catch(e) { alert("Hata oluştu."); }
+//}
 
 // Pin beğenme fonksiyonu
 async function likePin(event, pinId) {
@@ -294,7 +294,7 @@ async function deletePin(id) {
         }
     }
 
-function switchProfile(tabName) {
+/*function switchProfile(tabName) {
         document.getElementById('menuEdit').classList.remove('active');
         document.getElementById('menuPins').classList.remove('active');
         document.getElementById('editProfileSection').style.display = 'none';
@@ -308,8 +308,10 @@ function switchProfile(tabName) {
             document.getElementById('myPinsSection').style.display = 'block';
             loadMyPins();
         }
-    }
+    }*/
 
+
+// Profil resmini önizleme fonksiyonu
     function previewImage(input) {
         if (input.files && input.files[0]) {
             var reader = new FileReader();
@@ -327,7 +329,7 @@ function switchProfile(tabName) {
         container.innerHTML = '<p style="color:#888;">Yükleniyor...</p>';
 
         try {
-            const response = await fetch('/api/my-pins');
+            const response = await fetch('/pins/api/my-pins');
             const pins = await response.json();
             container.innerHTML = ''; 
 
@@ -343,8 +345,7 @@ function switchProfile(tabName) {
                 }
 
                 container.innerHTML += `
-                    <div class="pin-card">
-                        <img src="${imgPath}" alt="Pin Görseli">
+                    <div class="pin-card" id="pin-card-${pin.id}">  <img src="${imgPath}" alt="Pin Görseli">
                         <div class="pin-actions">
                             <span style="color:#888; font-size:12px;">${pin.title || 'İsimsiz'}</span>
                             <button onclick="deletePin(${pin.id})" class="btn-delete-pin">Sil</button>
@@ -394,9 +395,8 @@ function switchProfile(tabName) {
             // B. Paneli Görünür Yap (Slide Efekti)
             panel.classList.add('active');
             
-            // C. Sohbet Fonksiyonunu Tetikle (masonry.js içinden gelir)
+            
             if (typeof openChatWindow === 'function') {
-                // Bu fonksiyon masonry.js içinde tanımlı, sohbeti yükler
                 openChatWindow(userId, username, avatarUrl);
             } else {
                 console.error("HATA: masonry.js yüklenmemiş veya openChatWindow bulunamadı.");

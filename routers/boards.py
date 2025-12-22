@@ -7,7 +7,6 @@ from starlette.templating import Jinja2Templates
 from typing import Annotated
 
 from database import get_db
-# Comment modelini unutmadan ekledik
 from models import Board, User, Pin, board_pins, Comment 
 
 router = APIRouter(
@@ -17,7 +16,7 @@ router = APIRouter(
 
 templates = Jinja2Templates(directory="templates")
 
-# --- YARDIMCI: Otomatik Pano Kontrolü ---
+#Otomatik Pano Kontrolü 
 async def ensure_default_board(db: AsyncSession, user_id: int):
     """Kullanıcının 'Kaydedilenler' panosu yoksa oluşturur."""
     result = await db.execute(
@@ -38,10 +37,9 @@ async def ensure_default_board(db: AsyncSession, user_id: int):
         return new_board
     return default_board
 
-# --- 1. PANOLARI LİSTELE (SAYFA) ---
+#1. PANOLARI LİSTELE (SAYFA)
 @router.get("/boards")
 async def show_boards_page(request: Request, db: AsyncSession = Depends(get_db)):
-    # Kullanıcı Kontrolü
     user_id = request.session.get("user_id") or request.cookies.get("user_id")
     if not user_id:
         return templates.TemplateResponse("boards.html", {"request": request, "user": None, "boards": []})
@@ -55,28 +53,26 @@ async def show_boards_page(request: Request, db: AsyncSession = Depends(get_db))
     result = await db.execute(
         select(Board)
         .where(Board.owner_id == user_id)
-        .options(selectinload(Board.pins)) # İçindeki pin sayısını göstermek için
+        .options(selectinload(Board.pins))
         .order_by(Board.created_at.desc())
     )
     boards = result.scalars().all()
 
-    # Board nesnelerine sanal bir 'pin_count' ekleyelim (HTML'de kullanmak için)
     for b in boards:
         b.pin_count = len(b.pins)
 
-    # Şu anki kullanıcıyı da gönderiyoruz (Navbar sorunu olmasın diye)
     user_result = await db.execute(select(User).where(User.id == user_id))
     current_user = user_result.scalars().first()
 
     return templates.TemplateResponse("boards.html", {
         "request": request, 
         "boards": boards, 
-        "user": current_user,  # Base.html bunu kullanacak
+        "user": current_user, 
         "current_user": current_user,
         "active_page": "boards"
     })
 
-# --- 2. YENİ PANO OLUŞTUR (POST) ---
+#2. YENİ PANO OLUŞTUR (POST)
 @router.post("/create/board")
 async def create_board(
     request: Request,
@@ -99,15 +95,13 @@ async def create_board(
     db.add(new_board)
     await db.commit()
     
-    # Oluşturduktan sonra panolar sayfasına dön
     return await show_boards_page(request, db)
 
-# --- 3. PANO DETAYI (PANO İÇİNDEKİ PİNLER) ---
+#3.PANO DETAYI 
 @router.get("/board/{board_id}")
 async def get_board_detail(board_id: int, request: Request, db: AsyncSession = Depends(get_db)):
     user_id = request.session.get("user_id") or request.cookies.get("user_id")
     
-    # Panoyu ve içindeki Pinleri çek
     result = await db.execute(
         select(Board)
         .where(Board.id == board_id)
@@ -122,7 +116,6 @@ async def get_board_detail(board_id: int, request: Request, db: AsyncSession = D
     if not board:
         return "Pano bulunamadı"
 
-    # Kullanıcı bilgisi (Navbar için)
     current_user = None
     if user_id:
         u_res = await db.execute(select(User).where(User.id == int(user_id)))
@@ -131,19 +124,18 @@ async def get_board_detail(board_id: int, request: Request, db: AsyncSession = D
     return templates.TemplateResponse("board_detail.html", {
         "request": request,
         "board": board,
-        "pins": active_pins, # Sadece bu panodaki pinler
+        "pins": active_pins,
         "user": current_user,
         "current_user": current_user
     })
 
-# --- 5. JSON API: KULLANICININ PANOLARINI GETİR (Modal İçin) ---
+#5. JSON API: KULLANICININ PANOLARINI GETİR 
 @router.get("/boards/api/user_boards")
 async def get_user_boards_json(request: Request, db: AsyncSession = Depends(get_db)):
     user_id = request.session.get("user_id") or request.cookies.get("user_id")
     if not user_id:
-        return [] # Giriş yapmamışsa boş liste
+        return [] 
     
-    # Otomatik panoyu garanti et
     await ensure_default_board(db, int(user_id))
     
     result = await db.execute(
@@ -152,6 +144,5 @@ async def get_user_boards_json(request: Request, db: AsyncSession = Depends(get_
         .order_by(Board.created_at.desc())
     )
     boards = result.scalars().all()
-    
-    # Sadece ihtiyacımız olan veriyi döndürelim
+
     return [{"id": b.id, "title": b.title, "cover": b.cover_image} for b in boards]

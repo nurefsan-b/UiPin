@@ -1,5 +1,4 @@
 # routers/admin.py
-
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete
@@ -9,12 +8,12 @@ from typing import Annotated
 import os
 from pathlib import Path
 from notification_service import create_notification
-
+from sqlalchemy.orm import selectinload
 from database import get_db
 from models import User, Pin, Comment, Board, Report, CodeSnippet, pin_likes, board_pins
 from routers.users import get_current_user
 
-# 🚨 BİLDİRİM FONKSİYONUNU ÇAĞIRIYORUZ
+#BİLDİRİM FONKSİYONU
 try:
     from routers.notifications import create_notification
 except ImportError:
@@ -23,7 +22,7 @@ except ImportError:
 router = APIRouter(prefix="/admin", tags=["Admin"])
 templates = Jinja2Templates(directory="templates")
 
-# --- GÜVENLİK KONTROLÜ ---
+#GÜVENLİK KONTROLÜ
 async def get_current_admin(current_user: User = Depends(get_current_user)):
     if not current_user:
         raise HTTPException(status_code=401, detail="Giriş yapın.")
@@ -31,7 +30,7 @@ async def get_current_admin(current_user: User = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Bu sayfaya erişim yetkiniz yok.")
     return current_user
 
-# --- 1. DASHBOARD ---
+#1. DASHBOARD
 @router.get("/")
 async def admin_dashboard(
     request: Request, 
@@ -52,27 +51,53 @@ async def admin_dashboard(
         "recent_users": recent_users, "active_page": "admin"
     })
 
-# --- 2. PİNLERİ YÖNET ---
+#2. PİN YÖNETİMİ
 @router.get("/pins")
 async def admin_pins(
     request: Request, db: AsyncSession = Depends(get_db), admin: User = Depends(get_current_admin)
 ):
-    result = await db.execute(select(Pin).order_by(Pin.created_at.desc()).limit(50))
+    result = await db.execute(
+        select(Pin)
+        .where(Pin.is_deleted == False)     
+        .options(selectinload(Pin.owner))   
+        .order_by(Pin.created_at.desc())
+        .limit(50)
+    )
     pins = result.scalars().all()
+    
     return templates.TemplateResponse("admin/pins.html", {
         "request": request, "admin": admin, "pins": pins, "active_page": "admin_pins"
     })
+#3. KULLANICI SİLME
 
-# --- 3. KULLANICI SİLME ---
 @router.post("/users/delete/{user_id}")
-async def delete_user(user_id: int, db: AsyncSession = Depends(get_db), admin: User = Depends(get_current_admin)):
+async def delete_user(
+    user_id: int, 
+    db: AsyncSession = Depends(get_db), 
+    admin: User = Depends(get_current_admin)
+):
     if user_id == admin.id:
         raise HTTPException(status_code=400, detail="Kendinizi silemezsiniz.")
-    await db.execute(delete(User).where(User.id == user_id))
-    await db.commit()
-    return {"message": "Kullanıcı silindi"}
 
-# --- 4. PIN SİLME (DİREKT LİSTEDEN SİLME) ---
+    
+    # A. Kullanıcının Beğenilerini Kaldır
+    await db.execute(delete(pin_likes).where(pin_likes.c.user_id == user_id))
+    
+    # B. Kullanıcının Yorumlarını Sil
+    await db.execute(delete(Comment).where(Comment.user_id == user_id))
+    
+    # C. Kullanıcının Panolarını (Board) Sil
+    await db.execute(delete(Board).where(Board.owner_id == user_id))
+    
+    # D. Kullanıcının Pinlerini Sil
+    await db.execute(delete(Pin).where(Pin.owner_id == user_id))
+
+    await db.execute(delete(User).where(User.id == user_id))
+    
+    await db.commit()
+    return {"message": "Kullanıcı ve tüm verileri kalıcı olarak silindi."}
+
+# 4.PIN SİLME
 @router.post("/pins/delete/{pin_id}")
 async def delete_pin(
     pin_id: int, 
@@ -83,22 +108,21 @@ async def delete_pin(
     pin = pin_res.scalars().first()
     
     if pin:
-        owner_id = pin.owner_id # Sahibini kaydet
-        pin.is_deleted = True  # Silindi olarak işaretle
+        owner_id = pin.owner_id
+        pin.is_deleted = True 
         
-        # 🚨 BİLDİRİM GÖNDER (Genel Sebep)
         await create_notification(
             db=db,
             recipient_id=owner_id,
             actor_id=admin.id,
-            verb="deleted_admin", # Özel kod: Yönetici sildi
+            verb="deleted_admin",
             pin_id=None
         )
         
         await db.commit()
     return {"message": "Pin soft delete ile silindi"}
 
-# --- 5. RAPORLARI GÖRÜNTÜLE ---
+#5. RAPORLARI GÖRÜNTÜLE 
 @router.get("/reports")
 async def admin_reports(
     request: Request, db: AsyncSession = Depends(get_db), admin: User = Depends(get_current_admin)
@@ -113,7 +137,7 @@ async def admin_reports(
         "request": request, "admin": admin, "reports": reports, "active_page": "admin_reports"
     })
 
-# --- 6. RAPOR İŞLEMİ (ÇÖZME VE BİLDİRİM) ---
+#6.RAPOR İŞLEMİ
 @router.post("/reports/{report_id}/resolve")
 async def resolve_report(
     report_id: int, 
@@ -135,13 +159,9 @@ async def resolve_report(
 
             if pin:
                 owner_id = pin.owner_id
-                
-                # Temizlik
-                pin.is_deleted = True  # Soft delete
+                pin.is_deleted = True  
                 report.status = "resolved"
                 
-                # 🚨 BİLDİRİM GÖNDER (ÖZEL SEBEP)
-                # report.reason şunlar olabilir: 'spam', 'harmful', 'copyright', 'other'
                 verb_str = f"deleted_{report.reason}"
                 
                 await create_notification(

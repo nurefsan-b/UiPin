@@ -7,14 +7,9 @@ import json
 from pydantic import BaseModel
 from websocket_manager import manager
 
-# GERÇEK BAĞIMLILIKLAR
 from database import get_db
 from models import User, Message
-
-# =========================================================================
 # Pydantic Şemaları
-# =========================================================================
-
 class UserInMessageList(BaseModel):
     id: int
     username: str
@@ -34,17 +29,10 @@ class ChatMessageResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# =========================================================================
 # WebSocket Bağlantı Yöneticisi
-# =========================================================================
-
-
 router = APIRouter(prefix="/messages", tags=["Mesajlaşma (API & WS)"])
 
-# =========================================================================
 # WebSocket Endpoint'i (ANLIK İLETİŞİM)
-# =========================================================================
-
 @router.websocket("/ws/{sender_id}")
 async def websocket_endpoint(websocket: WebSocket, sender_id: int, db: AsyncSession = Depends(get_db)):
     """WebSocket üzerinden anlık mesaj alıp gönderme."""
@@ -63,9 +51,8 @@ async def websocket_endpoint(websocket: WebSocket, sender_id: int, db: AsyncSess
             if receiver_id and content:
                 new_message = Message(sender_id=sender_id, receiver_id=receiver_id, content=content)
                 db.add(new_message)
-                await db.flush()  # Veritabanına yazılmasını sağla
+                await db.flush() 
                 
-                # ALICIYA GÖNDER
                 response_to_receiver = json.dumps({
                     "type": "new_message",
                     "sender_id": sender_id,
@@ -74,7 +61,6 @@ async def websocket_endpoint(websocket: WebSocket, sender_id: int, db: AsyncSess
                 })
                 await manager.send_personal_message(response_to_receiver, receiver_id)
                 
-                # GÖNDERENE ONAY GÖNDER
                 response_to_sender = json.dumps({
                     "type": "sent_success"
                 })
@@ -86,20 +72,16 @@ async def websocket_endpoint(websocket: WebSocket, sender_id: int, db: AsyncSess
         print(f"WS Hata: {e}")
         manager.disconnect(sender_id)
 
-# =========================================================================
 # REST API Endpoint'leri (Arayüz Verileri)
-# =========================================================================
-
 @router.get("/users/list", response_model=List[UserInMessageList])
 async def get_messageable_users(db: AsyncSession = Depends(get_db), current_user_id: int = Query(...)):
     """Sadece geçmiş mesajlaşma olanları listeler."""
     
-    # Mesajlaştığım kişilerin ID'lerini bul (Hem alıcı hem gönderici olarak)
     sent = await db.execute(select(distinct(Message.receiver_id)).where(Message.sender_id == current_user_id))
     received = await db.execute(select(distinct(Message.sender_id)).where(Message.receiver_id == current_user_id))
     
     contact_ids = set(sent.scalars().all()) | set(received.scalars().all())
-    contact_ids.discard(current_user_id) # Kendimi listeden çıkar
+    contact_ids.discard(current_user_id) 
     
     if not contact_ids:
         return []

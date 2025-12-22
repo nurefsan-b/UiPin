@@ -42,37 +42,49 @@
             </div>
 
             <div class="pin-back">
-    <div class="tab-container">
-        {% for snippet in pin.snippets %}
-            <button class="code-tab {{ 'active' if loop.first else '' }}" 
-                    onclick="switchTab(event, 'tab-{{ pin.id }}-{{ snippet.language }}')">
+    
+    <div class="code-tabs">
+        <button class="code-tab active" onclick="switchTab(event, 'desc-{{ pin.id }}')">
+            <i class="fas fa-info-circle"></i> Detay
+        </button>
+
+        {% if pin.snippets %}
+            {% for snippet in pin.snippets %}
+            <button class="code-tab" onclick="switchTab(event, 'code-{{ snippet.id }}')">
                 {{ snippet.language|upper }}
             </button>
-        {% endfor %}
-
-        <button class="code-tab" style="background-color: #e60023; color: white;" 
-                onclick="runPreview(event, '{{ pin.id }}')">
-            <i class="fas fa-play"></i> Önizleme
-        </button>
+            {% endfor %}
+            
+            <button class="code-tab" style="color: #e60023;" onclick="runPreview(event, '{{ pin.id }}')">
+                <i class="fas fa-play"></i> Çalıştır
+            </button>
+        {% endif %}
     </div>
 
-    <div class="code-content">
-        {% for snippet in pin.snippets %}
-            <div id="tab-{{ pin.id }}-{{ snippet.language }}" 
-                 class="code-pane {{ 'active' if loop.first else '' }}"
-                 data-lang="{{ snippet.language }}">
-                <pre><code>{{ snippet.content }}</code></pre>
+    <div class="code-content-container">
+        
+        <div id="desc-{{ pin.id }}" class="code-pane active" style="padding: 15px; font-size: 13px; line-height: 1.6; color: #ddd;">
+            <strong style="display:block; margin-bottom:5px; color:white;">{{ pin.title }}</strong>
+            {{ pin.description if pin.description else "Bu pin için açıklama girilmemiş." }}
+            
+            <div style="margin-top: 15px; font-size: 11px; color: #888;">
+                <i class="fas fa-tag"></i> Etiket: {{ pin.tag }}<br>
+                <i class="far fa-clock"></i> {{ pin.created_at.strftime('%d.%m.%Y') if pin.created_at else '' }}
             </div>
-        {% endfor %}
-
-        <div id="preview-pane-{{ pin.id }}" class="code-pane" style="height: 100%; background: white;">
-            <iframe id="iframe-{{ pin.id }}" 
-                    style="width: 100%; height: 100%; border: none; background: white;">
-            </iframe>
         </div>
+
+        {% for snippet in pin.snippets %}
+        <div id="code-{{ snippet.id }}" class="code-pane" data-lang="{{ snippet.language }}">
+            <pre><code class="language-{{ snippet.language }}">{{ snippet.content }}</code></pre>
+        </div>
+        {% endfor %}
+        
+        <div id="preview-pane-{{ pin.id }}" class="code-pane" style="height: 100%; padding: 0;">
+            <iframe id="iframe-{{ pin.id }}" style="width:100%; height:100%; border:none; background: #1e1e1e;"></iframe>
+        </div>
+
     </div>
-    
-    </div>
+</div>
         </div>
     </div>
     {% endfor %}

@@ -1,4 +1,3 @@
-# search.py - GÜVENLİ VERSİYON
 from elasticsearch import AsyncElasticsearch
 
 # Elasticsearch bağlantısı
@@ -9,7 +8,6 @@ INDEX_NAME = "pins"
 async def create_index():
     """İndeks oluşturur, hata alırsan sessizce geçer."""
     try:
-        # İndeks zaten varsa tekrar oluşturma
         if not await es.indices.exists(index=INDEX_NAME):
             await es.indices.create(index=INDEX_NAME, body={
                 "mappings": {
@@ -22,11 +20,11 @@ async def create_index():
                     }
                 }
             })
-            print("✅ Elasticsearch İndeksi (Kutusu) Oluşturuldu.")
+            print("Elasticsearch İndeksi (Kutusu) Oluşturuldu.")
         else:
-            print("ℹ️ Elasticsearch İndeksi zaten var.")
+            print("Elasticsearch İndeksi zaten var.")
     except Exception as e:
-        print(f"⚠️ İndeks oluşturma hatası (Sunucu kapalı olabilir): {e}")
+        print(f"İndeks oluşturma hatası (Sunucu kapalı olabilir): {e}")
 
 async def index_pin(pin_data: dict):
     """Pini kaydeder."""
@@ -39,7 +37,7 @@ async def index_pin(pin_data: dict):
             "image_path": pin_data["image_path"]
         })
     except Exception as e:
-        print(f"⚠️ Pin kaydedilemedi: {e}")
+        print(f"Pin kaydedilemedi: {e}")
 
 async def delete_pin_from_es(pin_id: int):
     """Pini siler."""
@@ -51,16 +49,14 @@ async def delete_pin_from_es(pin_id: int):
 async def search_pins(query: str):
     """Arama yapar. Hata olursa boş liste döner, siteyi ÇÖKERTMEZ."""
     try:
-        # 1. Önce sunucuya ping at
         if not await es.ping():
-            print("⚠️ Elasticsearch sunucusuna ulaşılamıyor.")
+            print("Elasticsearch sunucusuna ulaşılamıyor.")
             return []
             
-        # 2. İndeks var mı kontrol et (Senin hatanı çözen kısım)
         if not await es.indices.exists(index=INDEX_NAME):
-            print("⚠️ 'pins' indeksi bulunamadı. Oluşturulmaya çalışılıyor...")
-            await create_index() # Bulamazsa o an oluşturmayı dene
-            return [] # Yeni oluştuğu için içi boştur
+            print("'pins' indeksi bulunamadı. Oluşturulmaya çalışılıyor...")
+            await create_index() 
+            return [] 
 
         # 3. Arama yap
         resp = await es.search(index=INDEX_NAME, body={
@@ -75,6 +71,5 @@ async def search_pins(query: str):
         return [hit["_source"] for hit in resp["hits"]["hits"]]
         
     except Exception as e:
-        # Ne olursa olsun boş liste dön, 500 hatası verme
-        print(f"⚠️ Arama sırasında hata oluştu: {e}")
+        print(f"Arama sırasında hata oluştu: {e}")
         return []

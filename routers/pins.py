@@ -15,19 +15,18 @@ from sqlalchemy import select, delete, insert
 from sqlalchemy.orm import selectinload
 from starlette.templating import Jinja2Templates
 
-# --- PROJE İÇİ IMPORTLAR ---
 from database import get_db
 from models import Pin, User, CodeSnippet, Comment, pin_likes, Board, board_pins, Report
 from routers.users import get_current_user
 from routers.notifications import create_notification
 
-# 🔍 ELASTICSEARCH IMPORTLARI
+#ELASTICSEARCH
 try:
     from search import index_pin, delete_pin_from_es, search_pins
     ES_ACTIVE = True
 except ImportError:
     ES_ACTIVE = False
-    print("⚠️ Elasticsearch modülü bulunamadı, arama çalışmayabilir.")
+    print("Elasticsearch modülü bulunamadı, arama çalışmayabilir.")
 
 router = APIRouter(prefix="/pins", tags=["Pins"])
 templates = Jinja2Templates(directory="templates")
@@ -63,10 +62,8 @@ async def create_pin(
     if not user_id:
         raise HTTPException(status_code=401, detail="Pin oluşturmak için giriş yapmalısınız.")
     
-    # ✨ İŞTE BU KADAR TEMİZ OLDU:
     db_image_path = await save_image_file(image_file, "images")
     
-    # Pini veritabanına kaydet
     db_pin = Pin(title=title, description=description, image_path=db_image_path, owner_id=int(user_id), tag=tag)
     db.add(db_pin)
     await db.commit()
@@ -81,7 +78,7 @@ async def create_pin(
             await db.commit()
         except: pass
 
-    # 🔍 ELASTICSEARCH'E KAYDET
+    #ELASTICSEARCH'E KAYDET
     if ES_ACTIVE:
         await index_pin({
             "id": db_pin.id,
@@ -102,39 +99,40 @@ async def delete_pin(
     db: AsyncSession = Depends(get_db), 
     current_user: User = Depends(get_current_user)
 ):
-    # 1. Pini bul (Sadece silinmemiş olanları getir demeye gerek yok, varsa vardır)
     result = await db.execute(select(Pin).where(Pin.id == pin_id))
     pin = result.scalars().first()
 
-    # 2. Yetki Kontrolü
     if not pin or pin.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Yetkiniz yok")
 
-    # 3. SOFT DELETE İŞLEMİ (Eski kodda db.delete yapıyorduk)
-    pin.is_deleted = True  # 👈 Sadece bunu True yapıyoruz, silmiyoruz!
-    
-    # Elasticsearch kullanıyorsan oradan gerçekten silmen veya güncellemen gerekir
+    pin.is_deleted = True 
+
     if ES_ACTIVE:
         await delete_pin_from_es(pin_id)
 
     await db.commit()
     return {"message": "Pin çöp kutusuna taşındı (Soft Deleted)"}
 
-# 🔍 YENİ ARAMA ENDPOINT'İ
+#ARAMA ENDPOINT'İ
 @router.get("/search")
 async def search_handler(q: str):
     if not ES_ACTIVE: return []
     return await search_pins(q)
 
-# --- DİĞER ENDPOINTLER (Değişmedi) ---
+#DİĞER ENDPOINTLER 
 @router.get("/", response_model=List[PinResponse])
 async def get_all_pins(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Pin).where(Pin.is_deleted == False).options(selectinload(Pin.owner), selectinload(Pin.snippets)).order_by(Pin.created_at.desc()).limit(50))
     return result.scalars().all()
 
 @router.get("/api/my-pins")
-async def get_user_pins(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    result = await db.execute(select(Pin).where(Pin.is_deleted == False).filter(Pin.owner_id == current_user.id).order_by(Pin.created_at.desc()))
+async def get_my_pins(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(Pin)
+        .where(Pin.owner_id == current_user.id)
+        .where(Pin.is_deleted == False)
+        .order_by(Pin.created_at.desc())
+    )
     return result.scalars().all()
 
 @router.post("/{pin_id}/like")

@@ -1,9 +1,7 @@
 //User ID'sini alma fonksiyonu
 function getUserId() {
-    // Önce body'ye bak
     let attr = document.body.getAttribute('data-current-user-id');
     
-    // Bulamazsa gizli div'e bak
     if (!attr) {
         const hiddenDiv = document.getElementById('current-user-data');
         if (hiddenDiv) attr = hiddenDiv.getAttribute('data-user-id');
@@ -12,7 +10,6 @@ function getUserId() {
     const parsed = parseInt(attr);
     
     if (!attr || attr === "None" || attr === "null" || isNaN(parsed) || parsed === 0) {
-        // console.warn("⚠️ Kullanıcı oturumu açık değil veya ID okunamadı.");
         return null; 
     }
     return parsed;
@@ -43,7 +40,6 @@ function initWebSocket() {
         try {
             const data = JSON.parse(event.data);
             
-            // 1. MESAJ GELDİYSE
             if (data.type === 'new_message') {
                 if (parseInt(data.sender_id) !== current_user_id) { 
                     if (currentChatUserId && parseInt(data.sender_id) === parseInt(currentChatUserId)) {
@@ -54,7 +50,6 @@ function initWebSocket() {
                 }
             }
             
-            // 2. BİLDİRİM GELDİYSE
             if (data.type === 'new_notification') {
                 console.log("🔔 Yeni bildirim!");
                 showNotificationBadge(); 
@@ -209,7 +204,6 @@ async function loadNotifications() {
         }
 
         container.innerHTML = notifs.map(n => {
-            // Bildirim metnini oluşturma
             let text = '';
             let isDeleted = false;
             
@@ -218,8 +212,7 @@ async function loadNotifications() {
             } else if (n.verb === 'commented') {
                 text = 'yorum yaptı.';
             } else if (n.verb && n.verb.startsWith('deleted_')) {
-                // Silinme sebeplerini Türkçeye çevir
-                const reasonKey = n.verb.split('_')[1]; // 'spam', 'copyright' vs.
+                const reasonKey = n.verb.split('_')[1]; 
                 const reasonsTR = {
                     'spam': 'Spam veya Yanıltıcı İçerik',
                     'harmful': 'Zararlı İçerik',
@@ -237,7 +230,7 @@ async function loadNotifications() {
             }
 
             // Tıklanma olayı (Silindiyse tıklanmasın)
-            const clickAction = (n.pin_id && !isDeleted) ? `onclick="window.location.href='/home?target_pin=${n.pin_id}'"` : '';
+            const clickAction = (n.pin_id && !isDeleted) ? `onclick="window.location.href='/?target_pin=${n.pin_id}'"` : '';
             const cursorStyle = (n.pin_id && !isDeleted) ? 'cursor:pointer;' : 'cursor:default;';
 
             return `

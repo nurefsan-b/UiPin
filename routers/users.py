@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Annotated
 from fastapi.responses import RedirectResponse
-# 👇 BU SATIR EKLENDİ (HTML sayfalarını kullanabilmek için şart)
 from fastapi.templating import Jinja2Templates 
 
 try:
@@ -17,13 +16,12 @@ except ImportError:
     from ..models import User, Board
     from ..auth import verify_password, get_password_hash
 
-# Router prefix'i "/users" olduğu için tüm adresler /users ile başlar
 router = APIRouter(prefix="/users", tags=["Users"])
 
-# 👇 BU AYAR EKLENDİ (HTML dosyalarının 'templates' klasöründe olduğunu belirtir)
+
 templates = Jinja2Templates(directory="templates")
 
-# --- MODELLER ---
+# MODELLER
 class UserCreate(BaseModel):
     first_name: str
     last_name: str
@@ -37,7 +35,7 @@ class UserLogin(BaseModel):
     username: str
     password: str
 
-# --- SESSION KONTROL FONKSİYONU ---
+#SESSION KONTROL FONKSİYONU
 async def get_current_user(request: Request, db: AsyncSession = Depends(get_db)):
     user_id = request.session.get("user_id")
     if not user_id:
@@ -51,15 +49,13 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
     
     return user
 
-# --- LOGIN SAYFASI GÖSTERME (YENİ EKLENDİ) ---
-# Adres: /users/login
+#LOGIN SAYFASI GÖSTERME
 @router.get("/login")
 async def login_page(request: Request):
         
-    # Değilse giriş ekranını aç (login_register.html templates klasöründe olmalı!)
     return templates.TemplateResponse("login_register.html", {"request": request})
 
-# --- KAYIT OL (REGISTER) ---
+# KAYIT OL (REGISTER)
 @router.post("/register") 
 async def create_user(
     request: Request,
@@ -95,7 +91,7 @@ async def create_user(
     
     return {"message": "Kayıt başarılı"}
 
-# --- GİRİŞ YAP (LOGIN POST) ---
+#GİRİŞ YAP (LOGIN POST)
 @router.post("/login")
 async def login_user(
     request: Request,
@@ -113,10 +109,8 @@ async def login_user(
 
     return {"message": "Giriş başarılı"}
 
-# --- ÇIKIŞ YAP (LOGOUT) ---
-# Adres: /users/logout
+# ÇIKIŞ YAP (LOGOUT) 
 @router.get("/logout") 
 async def logout_user(request: Request):
     request.session.clear()
-    # Çıkış yapınca /users/login sayfasına yönlendir
     return RedirectResponse(url="/users/login", status_code=302)

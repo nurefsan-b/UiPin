@@ -9,8 +9,6 @@ from typing import Annotated
 from sqlalchemy.orm import selectinload
 from sqlalchemy import select 
 from utils import save_image_file
-# Proje içi importlar
-# Modelleri içe aktar
 try:
     from database import get_db
     from auth import get_password_hash, verify_password
@@ -36,7 +34,7 @@ async def show_profile(request: Request, db: AsyncSession = Depends(get_db)):
     return templates.TemplateResponse("profile.html", {
     "request": request, 
     "user": user,
-    "active_page": "profile"  # Bu değer base.html'deki if kontrolünü tetikler
+    "active_page": "profile"
 })
 
 # 2. PROFİL GÜNCELLE (POST)
@@ -47,21 +45,20 @@ async def update_profile(
     last_name: Annotated[str, Form()] = None,
     username: Annotated[str, Form()] = None,
     email: Annotated[str, Form()] = None,
-    age: Annotated[str, Form()] = None, # String aldık, hata vermesin diye
+    age: Annotated[str, Form()] = None, 
     gender: Annotated[str, Form()] = None,
     current_password: Annotated[str, Form()] = None,
     new_password: Annotated[str, Form()] = None,
     profile_picture: UploadFile = File(None),
     db: AsyncSession = Depends(get_db)
 ):
-    # Kullanıcı Doğrulama
     try:
         user = await get_current_user(request, db)
     except:
         return RedirectResponse(url="/", status_code=302)
 
     try:
-        # --- BİLGİ GÜNCELLEME ---
+        # BİLGİ GÜNCELLEME 
         if first_name: user.first_name = first_name
         if last_name: user.last_name = last_name
         if username: user.username = username
@@ -69,25 +66,23 @@ async def update_profile(
         if age and age.strip().isdigit(): user.age = int(age)
         if gender: user.gender = gender
 
-        # --- RESİM YÜKLEME (GÜÇLENDİRİLMİŞ YÖNTEM) ---
+        # RESİM YÜKLEME 
         if profile_picture and profile_picture.filename:
             try:
-                # utils.py içindeki fonksiyonu kullanıyoruz (Tek satır!)
                 saved_path = await save_image_file(profile_picture, "images")
                 
                 if saved_path:
                     user.profile_picture = saved_path
                 
             except Exception as img_err:
-                print(f"Resim Hatası: {img_err}") # Terminale hatayı yaz
-                # Resim yüklenemese bile program çökmesin, hatayı göstersin
+                print(f"Resim Hatası: {img_err}") 
                 return templates.TemplateResponse("profile.html", {
                     "request": request, 
                     "user": user, 
                     "error": f"Fotoğraf yüklenemedi: {str(img_err)}"
                 })
 
-        # --- ŞİFRE DEĞİŞTİRME ---
+        # ŞİFRE DEĞİŞTİRME
         if current_password and new_password:
             if verify_password(current_password, user.hashed_password):
                 user.hashed_password = get_password_hash(new_password)
@@ -96,7 +91,6 @@ async def update_profile(
                      "request": request, "user": user, "error": "Mevcut şifre yanlış!"
                  })
 
-        # Kaydet
         await db.commit()
         await db.refresh(user)
         
@@ -139,11 +133,10 @@ async def show_public_profile(
     )
     user_pins = pins_res.scalars().all()
 
-    # 3. Panoları çek (VE İÇİNDEKİ PİNLERİ DE YÜKLE)
+    # 3. Panoları çek
     boards_res = await db.execute(
         select(Board)
         .where(Board.owner_id == profile_user.id)
-        # 👇 İŞTE BU SATIR EKSİKTİ, O YÜZDEN HATA ALIYORDUN
         .options(selectinload(Board.pins)) 
     )
     user_boards = boards_res.scalars().all()

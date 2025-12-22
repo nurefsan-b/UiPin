@@ -8,7 +8,7 @@ function applyMasonry() {
 
     const style = getComputedStyle(grid);
     let columnCount = parseInt(style.getPropertyValue('--column-count')); 
-    if (isNaN(columnCount) || columnCount < 1) columnCount = 5;
+    if (isNaN(columnCount) || columnCount < 1) columnCount = 4;
 
     const columnGap = 10;
     const containerWidth = grid.clientWidth;
@@ -111,29 +111,26 @@ function debounce(func, delay) {
     };
 }
 
-function runPreview(event, pinId) {
-    event.stopPropagation(); // Kartın dönmesini engelle
+//RUNPREVIEW
 
-    // 1. Sekme Görünümünü Ayarla
+function runPreview(event, pinId) {
+    event.stopPropagation(); 
+
     const cardBack = event.target.closest('.pin-back');
-    
-    // Tüm sekmeleri pasif yap
     cardBack.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
     cardBack.querySelectorAll('.code-pane').forEach(p => p.classList.remove('active'));
 
-    // Tıklanan butonu aktif yap
     event.target.classList.add('active');
-
-    // Önizleme penceresini aktif yap
     const previewPane = document.getElementById(`preview-pane-${pinId}`);
-    previewPane.classList.add('active');
+    if(previewPane) previewPane.classList.add('active');
 
-    // 2. Kodları Topla
     let htmlCode = "";
     let cssCode = "";
     let jsCode = "";
+    let pythonCode = ""; 
+    let sqlCode = "";    
+    let hasBackendCode = false;
 
-    // O karta ait tüm kod bloklarını gez
     const panes = cardBack.querySelectorAll('.code-pane[data-lang]');
     
     panes.forEach(pane => {
@@ -143,32 +140,67 @@ function runPreview(event, pinId) {
         if (lang === 'html') htmlCode = code;
         else if (lang === 'css') cssCode = code;
         else if (lang === 'javascript' || lang === 'js') jsCode = code;
+        else if (lang === 'python') { pythonCode = code; hasBackendCode = true; }
+        else if (lang === 'sql') { sqlCode = code; hasBackendCode = true; }
     });
 
-    // 3. Canlı Sayfayı Oluştur (Blob)
-    const fullSource = `
-        <html>
+    
+    let finalSource = "";
+
+    if (hasBackendCode && !htmlCode && !jsCode) {
+        
+        let terminalContent = "";
+        if(pythonCode) terminalContent += `<div class="cmd"><span class="prompt">root@uipin:~/python#</span> cat script.py\n${pythonCode}</div>`;
+        if(sqlCode) terminalContent += `<div class="cmd"><span class="prompt">root@uipin:~/sql#</span> cat query.sql\n${sqlCode}</div>`;
+
+        finalSource = `
+            <html>
             <head>
                 <style>
-                    body { font-family: sans-serif; padding: 20px; margin: 0; }
-                    ${cssCode}
+                    body { background-color: #1e1e1e; color: #0f0; font-family: 'Courier New', monospace; padding: 20px; margin: 0; }
+                    .terminal-box { border: 1px solid #333; padding: 20px; border-radius: 8px; background: #000; box-shadow: 0 0 20px rgba(0,255,0,0.1); }
+                    .cmd { white-space: pre-wrap; margin-bottom: 20px; line-height: 1.4; }
+                    .prompt { color: #e60023; font-weight: bold; margin-right: 10px; }
+                    h3 { color: #fff; border-bottom: 1px solid #333; padding-bottom: 10px; }
                 </style>
             </head>
             <body>
-                ${htmlCode}
-                <script>
-                    try {
-                        ${jsCode}
-                    } catch(e) { console.error(e); }
-                <\/script>
+                <div class="terminal-box">
+                    <h3>Backend Code Preview (Read-Only)</h3>
+                    ${terminalContent}
+                    <div class="cmd" style="color: #888; margin-top: 20px;">
+                        // Not: Python ve SQL tarayıcıda doğrudan çalıştırılamaz.<br>
+                        // Bu kodlar sunucu tarafında çalışmak üzere tasarlanmıştır.
+                    </div>
+                </div>
             </body>
-        </html>
-    `;
+            </html>
+        `;
+    } else {
+        // --- SENARYO 2: Normal Web Önizlemesi (HTML/CSS/JS) ---
+        finalSource = `
+            <html>
+                <head>
+                    <style>
+                        body { font-family: sans-serif; padding: 20px; margin: 0; }
+                        ${cssCode}
+                    </style>
+                </head>
+                <body>
+                    ${htmlCode}
+                    <script>
+                        try {
+                            ${jsCode}
+                        } catch(e) { console.error(e); }
+                    <\/script>
+                </body>
+            </html>
+        `;
+    }
 
-    // 4. İframe'e Yaz
     const iframe = document.getElementById(`iframe-${pinId}`);
-    // Güvenlik için sandbox kullanıyoruz (Alert vs çalışır ama cookie çalamaz)
-    iframe.sandbox = "allow-scripts allow-modals"; 
-    iframe.srcdoc = fullSource;
+    if(iframe) {
+        iframe.srcdoc = finalSource;
+    }
 }
 

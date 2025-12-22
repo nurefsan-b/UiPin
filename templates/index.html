@@ -91,6 +91,9 @@
                             </button>
                     </div>
                     <div class="code-content-container">
+                        <div id="desc-{{ pin.id }}" class="code-pane active" style="padding: 15px; color: #ddd; font-size: 13px; line-height: 1.5;">
+                                     {{ pin.description if pin.description else "Bu pin için açıklama girilmemiş." }}
+                         </div>
                         {% for snippet in pin.snippets %}
                             <div id="code-{{ pin.id }}-{{ loop.index }}" class="code-pane {% if loop.first %}active{% endif %}" data-lang="{{ snippet.language }}">
                                 <pre class="code-block" style="margin:0; white-space: pre-wrap;"><code>{{ snippet.content }}</code></pre>

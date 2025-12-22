@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 Masonry JS Yüklendi. Kullanıcı ID:", current_user_id);
+    console.log("Masonry JS Yüklendi. Kullanıcı ID:", current_user_id);
     
     initWebSocket(); 
     loadMessageUsers(); 
@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Global Arama
-    // --- 🔍 GELİŞMİŞ ELASTICSEARCH ARAMASI ---
+    // GELİŞMİŞ ELASTICSEARCH ARAMASI 
     const globalSearchInput = document.getElementById('global-search-input');
 
     if (globalSearchInput) {
@@ -124,18 +124,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const query = e.target.value.trim();
             const container = document.querySelector('.pin-grid') || document.getElementById('myPinsContainer');
             
-            // Boşsa sayfayı yenile (Orijinal listeye dön)
             if (query.length === 0) {
                 window.location.reload(); 
                 return;
             }
 
             try {
-                // Backend'den Elasticsearch sorgusu yap
                 const res = await fetch(`/pins/search?q=${encodeURIComponent(query)}`);
                 const results = await res.json();
 
-                container.innerHTML = ''; // Mevcutları temizle
+                container.innerHTML = '';
 
                 if (results.length === 0) {
                     container.innerHTML = '<p style="text-align:center; width:100%; color:#888;">Sonuç bulunamadı.</p>';
@@ -143,7 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                // Gelen sonuçları ekrana bas
                 results.forEach(pin => {
                     let imgPath = pin.image_path;
                     if (!imgPath.startsWith('/static') && !imgPath.startsWith('http')) {
@@ -152,7 +149,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const div = document.createElement('div');
                     div.className = 'pin-card';
-                    // Pinin tıklanabilir olması için orijinal yapıyı koruyoruz
                     div.innerHTML = `
                         <div class="pin-inner" onclick="this.parentElement.classList.toggle('flipped')">
                             <div class="pin-front">
@@ -166,13 +162,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     container.appendChild(div);
                 });
                 
-                // Masonry düzenini uygula
                 setTimeout(applyMasonry, 100);
 
             } catch (err) {
                 console.error("Arama hatası:", err);
             }
-        }, 300)); // 300ms bekleme süresi (debounce)
+        }, 300)); 
     }
 
     // Pin Oluşturma
@@ -288,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 🚨 BİLDİRİMDEN GELEN PİNİ AÇMA
+    //BİLDİRİMDEN GELEN PİNİ AÇMA
     const urlParams = new URLSearchParams(window.location.search);
     const targetPinId = urlParams.get('target_pin');
 

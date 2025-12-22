@@ -18,16 +18,16 @@ from models import Pin, User, Comment
 from routers import pins, users, boards, notifications, messages, profile, admin
 from routers.users import get_current_user 
 
-# --- LIFESPAN (YAŞAM DÖNGÜSÜ) AYARI ---
+# LIFESPAN (YAŞAM DÖNGÜSÜ) AYARI 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await create_tables()
     await create_index()
-    print("🚀 Uygulama ve Elasticsearch başarıyla başlatıldı.")
+    print(" Uygulama ve Elasticsearch başarıyla başlatıldı.")
     yield 
-    print("🛑 Uygulama kapatılıyor...")
+    print("Uygulama kapatılıyor...")
 
-# --- FASTAPI UYGULAMASI TANIMLAMASI ---
+# FASTAPI UYGULAMASI TANIMLAMASI 
 app = FastAPI(
     title="Pinterest Klonu API",
     description="Python FastAPI ile Pin paylaşım uygulaması",
@@ -42,7 +42,7 @@ app.add_middleware(SessionMiddleware, secret_key="cok_gizli_anahtar_buraya")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# --- ROUTER ENTEGRASYONLARI ---
+# ROUTER ENTEGRASYONLARI
 app.include_router(pins.router)
 app.include_router(users.router)
 app.include_router(boards.router)
@@ -51,20 +51,20 @@ app.include_router(messages.router)
 app.include_router(profile.router)
 app.include_router(admin.router)
 
-# --- ANA SAYFA (FEED) ---
+# ANA SAYFA (FEED) 
 @app.get("/")
 async def home(
     request: Request, 
     db: AsyncSession = Depends(get_db),
     tag: str = None 
 ):
-    # --- 1. GÜVENLİK KONTROLÜ (YENİ) ---
+    # 1. GÜVENLİK KONTROLÜ 
     # Eğer kullanıcı giriş yapmamışsa, direkt Login sayfasına yönlendir!
     user_id = request.session.get("user_id")
     if not user_id:
         return RedirectResponse(url="/users/login", status_code=status.HTTP_302_FOUND)
 
-    # --- 2. KULLANICI BİLGİSİNİ ÇEK ---
+    # 2. KULLANICI BİLGİSİNİ ÇEK 
     current_user = None
     if user_id:
         u_res = await db.execute(select(User).where(User.id == int(user_id)))
@@ -105,7 +105,7 @@ async def home(
         }
     )
 
-# --- API: KULLANICI PİNLERİ ---
+# API: KULLANICI PİNLERİ
 @app.get("/api/my-pins")
 async def get_user_pins(
     db: AsyncSession = Depends(get_db), 

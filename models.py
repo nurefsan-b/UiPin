@@ -3,27 +3,20 @@ from sqlalchemy import Column, Integer, String, Text, DateTime, func, Boolean, F
 from sqlalchemy.orm import relationship
 from database import Base 
 
-# =================================================================
-# ARA TABLOLAR (M2M İlişkileri)
-# =================================================================
-
-# 1. Pano-Pin İlişkisi (Hangi pin hangi panoda?)
+# 1. Pano-Pin İlişkisi 
 board_pins = Table(
     'board_pins', Base.metadata,
     Column('board_id', Integer, ForeignKey('boards.id')),
     Column('pin_id', Integer, ForeignKey('pins.id'))
 )
 
-# 2. Beğeni İlişkisi (Hangi Kullanıcı Hangi Pini Beğendi?)
+# 2. Beğeni İlişkisi 
 pin_likes = Table(
     'pin_likes', Base.metadata,
     Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
     Column('pin_id', Integer, ForeignKey('pins.id'), primary_key=True)
 )
 
-# =================================================================
-# ANA MODELLER
-# =================================================================
 
 class User(Base):
     __tablename__ = "users"
@@ -51,8 +44,6 @@ class User(Base):
     # İlişkiler (Many-to-Many)
     liked_pins = relationship("Pin", secondary=pin_likes, back_populates="liked_by_users")
     
-    # Mesajlaşma ilişkileri (Message tablosundaki backref'lerden gelir: sent_messages, received_messages)
-    # Bildirim ilişkileri (Notification tablosundaki backref'ten gelir: notifications)
 
     def __repr__(self):
         return f"<User(username='{self.username}')>"
@@ -163,8 +154,8 @@ class Report(Base):
     __tablename__ = "reports"
     
     id = Column(Integer, primary_key=True, index=True)
-    reason = Column(String(50), nullable=False) # Spam, Şiddet vb.
-    status = Column(String(20), default="pending") # pending, resolved, dismissed
+    reason = Column(String(50), nullable=False) 
+    status = Column(String(20), default="pending") 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     reporter_id = Column(Integer, ForeignKey("users.id"), nullable=False)

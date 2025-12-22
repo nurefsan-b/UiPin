@@ -3,7 +3,6 @@ from fastapi import WebSocket
 
 class ConnectionManager:
     def __init__(self):
-        # Aktif bağlantıları tutan sözlük: {user_id: websocket}
         self.active_connections: dict[int, WebSocket] = {}
 
     async def connect(self, user_id: int, websocket: WebSocket):

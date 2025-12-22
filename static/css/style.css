@@ -206,9 +206,8 @@ body {
     max-width: 1400px;
     margin: 0 auto;
     padding: 10px;
-    column-count: 5; 
     column-gap: 10px; 
-    --column-count: 5;
+    --column-count: 4;
 }
 
 /* Pin Kartı */
@@ -1102,4 +1101,12 @@ body {
 .pin-date {
     font-size: 10px;
     color: #ccc;
+}
+
+/* Kart arkayüzü için önizleme */
+.code-pane {
+    background-color: #0f0f0f !important; /* Siyahtan çok az açık (Derinlik katar) */
+    border: 1px solid #2a2a2a; /* Kod kutusunun çerçevesi */
+    border-radius: 8px; /* Köşeleri yumuşat */
+    font-family: 'Courier New', Courier, monospace; /* Kod fontu */
 }
