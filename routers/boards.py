@@ -46,10 +46,7 @@ async def show_boards_page(request: Request, db: AsyncSession = Depends(get_db))
 
     user_id = int(user_id)
 
-    # 1. Otomatik Panoyu Garantiye Al
     await ensure_default_board(db, user_id)
-
-    # 2. Tüm Panoları Çek
     result = await db.execute(
         select(Board)
         .where(Board.owner_id == user_id)

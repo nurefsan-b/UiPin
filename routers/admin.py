@@ -80,16 +80,12 @@ async def delete_user(
         raise HTTPException(status_code=400, detail="Kendinizi silemezsiniz.")
 
     
-    # A. Kullanıcının Beğenilerini Kaldır
     await db.execute(delete(pin_likes).where(pin_likes.c.user_id == user_id))
     
-    # B. Kullanıcının Yorumlarını Sil
     await db.execute(delete(Comment).where(Comment.user_id == user_id))
     
-    # C. Kullanıcının Panolarını (Board) Sil
     await db.execute(delete(Board).where(Board.owner_id == user_id))
     
-    # D. Kullanıcının Pinlerini Sil
     await db.execute(delete(Pin).where(Pin.owner_id == user_id))
 
     await db.execute(delete(User).where(User.id == user_id))

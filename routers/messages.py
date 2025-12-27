@@ -6,9 +6,20 @@ from datetime import datetime
 import json
 from pydantic import BaseModel
 from websocket_manager import manager
+import redis.asyncio as redis
 
 from database import get_db
 from models import User, Message
+
+# Redis bağlantısı
+redis_client = None
+
+async def get_redis():
+    global redis_client
+    if redis_client is None:
+        redis_client = await redis.from_url("redis://localhost:6379")
+    return redis_client
+
 # Pydantic Şemaları
 class UserInMessageList(BaseModel):
     id: int
@@ -32,11 +43,12 @@ class ChatMessageResponse(BaseModel):
 # WebSocket Bağlantı Yöneticisi
 router = APIRouter(prefix="/messages", tags=["Mesajlaşma (API & WS)"])
 
-# WebSocket Endpoint'i (ANLIK İLETİŞİM)
+# WebSocket Endpoint'i 
 @router.websocket("/ws/{sender_id}")
 async def websocket_endpoint(websocket: WebSocket, sender_id: int, db: AsyncSession = Depends(get_db)):
     """WebSocket üzerinden anlık mesaj alıp gönderme."""
     await manager.connect(sender_id, websocket)
+    redis_conn = await get_redis()
     
     try:
         while True:
@@ -51,7 +63,17 @@ async def websocket_endpoint(websocket: WebSocket, sender_id: int, db: AsyncSess
             if receiver_id and content:
                 new_message = Message(sender_id=sender_id, receiver_id=receiver_id, content=content)
                 db.add(new_message)
-                await db.flush() 
+                await db.flush()
+                await db.commit()
+                
+                message_key = f"chat:{min(sender_id, receiver_id)}:{max(sender_id, receiver_id)}"
+                await redis_conn.lpush(message_key, json.dumps({
+                    "sender_id": sender_id,
+                    "receiver_id": receiver_id,
+                    "content": content,
+                    "created_at": str(datetime.now())
+                }))
+                await redis_conn.expire(message_key, 86400) 
                 
                 response_to_receiver = json.dumps({
                     "type": "new_message",
@@ -72,7 +94,7 @@ async def websocket_endpoint(websocket: WebSocket, sender_id: int, db: AsyncSess
         print(f"WS Hata: {e}")
         manager.disconnect(sender_id)
 
-# REST API Endpoint'leri (Arayüz Verileri)
+# REST API Endpoint'leri 
 @router.get("/users/list", response_model=List[UserInMessageList])
 async def get_messageable_users(db: AsyncSession = Depends(get_db), current_user_id: int = Query(...)):
     """Sadece geçmiş mesajlaşma olanları listeler."""
@@ -105,6 +127,26 @@ async def search_users(q: str = Query(..., min_length=1), db: AsyncSession = Dep
 
 @router.get("/history/{target_user_id}", response_model=List[ChatMessageResponse])
 async def get_chat_history(target_user_id: int, db: AsyncSession = Depends(get_db), current_user_id: int = Query(...)):
+    """Chat geçmişini Redis'ten getir (24 saatlik), yoksa DB'den."""
+    redis_conn = await get_redis()
+    message_key = f"chat:{min(current_user_id, target_user_id)}:{max(current_user_id, target_user_id)}"
+    
+    cached_messages = await redis_conn.lrange(message_key, 0, -1)
+    
+    if cached_messages:
+        messages_list = []
+        for msg_json in reversed(cached_messages):
+            msg_data = json.loads(msg_json)
+            messages_list.append(
+                ChatMessageResponse(
+                    sender_id=msg_data["sender_id"],
+                    content=msg_data["content"],
+                    created_at=datetime.fromisoformat(msg_data["created_at"]),
+                    is_mine=(msg_data["sender_id"] == current_user_id)
+                )
+            )
+        return messages_list
+    
     stmt = select(Message).where(
         or_(
             (Message.sender_id == current_user_id) & (Message.receiver_id == target_user_id),

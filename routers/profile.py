@@ -117,14 +117,12 @@ async def show_public_profile(
     request: Request, 
     db: AsyncSession = Depends(get_db)
 ):
-    # 1. Profil sahibini bul
     result = await db.execute(select(User).where(User.username == username))
     profile_user = result.scalars().first()
 
     if not profile_user:
         return RedirectResponse(url="/")
 
-    # 2. Pinleri çek
     pins_res = await db.execute(
         select(Pin)
         .where(Pin.owner_id == profile_user.id)
@@ -133,7 +131,6 @@ async def show_public_profile(
     )
     user_pins = pins_res.scalars().all()
 
-    # 3. Panoları çek
     boards_res = await db.execute(
         select(Board)
         .where(Board.owner_id == profile_user.id)
@@ -141,7 +138,6 @@ async def show_public_profile(
     )
     user_boards = boards_res.scalars().all()
 
-    # 4. Şu anki kullanıcı
     current_user = None
     if request.session.get("user_id"):
         try:

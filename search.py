@@ -1,7 +1,11 @@
 from elasticsearch import AsyncElasticsearch
 
 # Elasticsearch bağlantısı
-es = AsyncElasticsearch("http://localhost:9200")
+es = AsyncElasticsearch(
+    hosts=["http://localhost:9200"],
+    verify_certs=False,
+    ssl_show_warn=False
+)
 
 INDEX_NAME = "pins"
 
@@ -9,8 +13,9 @@ async def create_index():
     """İndeks oluşturur, hata alırsan sessizce geçer."""
     try:
         if not await es.indices.exists(index=INDEX_NAME):
-            await es.indices.create(index=INDEX_NAME, body={
-                "mappings": {
+            await es.indices.create(
+                index=INDEX_NAME,
+                mappings={
                     "properties": {
                         "pin_id": {"type": "integer"},
                         "title": {"type": "text"},
@@ -18,8 +23,12 @@ async def create_index():
                         "tag": {"type": "keyword"},
                         "image_path": {"type": "keyword"}
                     }
+                },
+                settings={
+                    "number_of_shards": 1,
+                    "number_of_replicas": 0
                 }
-            })
+            )
             print("Elasticsearch İndeksi (Kutusu) Oluşturuldu.")
         else:
             print("Elasticsearch İndeksi zaten var.")
@@ -58,7 +67,6 @@ async def search_pins(query: str):
             await create_index() 
             return [] 
 
-        # 3. Arama yap
         resp = await es.search(index=INDEX_NAME, body={
             "query": {
                 "multi_match": {

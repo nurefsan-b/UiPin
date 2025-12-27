@@ -77,8 +77,6 @@ async def create_pin(
                 db.add(new_snippet)
             await db.commit()
         except: pass
-
-    #ELASTICSEARCH'E KAYDET
     if ES_ACTIVE:
         await index_pin({
             "id": db_pin.id,
